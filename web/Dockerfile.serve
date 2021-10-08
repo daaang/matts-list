@@ -1,0 +1,17 @@
+# It is not intended that you actually deploy this container. The
+# intention is to deploy the static files to a CDN. This container
+# essentially simulates that by deploying those same static files to an
+# otherwise unconfigured nginx web server.
+FROM node:16.10 as builder
+
+WORKDIR /usr/src/app
+COPY package.json yarn.lock ./
+RUN yarn install
+COPY ./public public/
+COPY ./src src/
+
+RUN npx standard
+RUN yarn build
+
+FROM nginx:1.21
+COPY --from=builder /usr/src/app/build /usr/share/nginx/html/

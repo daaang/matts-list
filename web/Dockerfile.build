@@ -1,0 +1,44 @@
+# There's probably a better way to do this. The basic goal is to build
+# the static site and to then get the resulting files on the host
+# machine. The idea is simple enough: the container image has everything
+# copied in and installed, the host machine runs the container with a
+# volume mounted inside it, and the running container puts the built
+# files where the volume is mounted.
+#
+# This led to a lot of permission headaches. At this point, rather than
+# build straight into the volume, we build into /tmp, and then we put a
+# tarball of that into the volume. That way, this process creates only a
+# single file.
+#
+# Once created, it can be expanded on the host machine using the user's
+# permissions, and, since the output is a single file and no
+# directories, that user should have no trouble deleting the tarball.
+#
+# I don't know, if you're reading this, and you think you know a good
+# way to do this, I'm all ears. This is dumb.
+#
+# Oh and also this can be used to run tests instead of building the
+# files, because everything running up to that build command is the same
+# as (or at least doesn't interfere with) what's needed for tests.
+#
+# Yeah, I don't know. I'm right here in the initial commit, and I'm
+# already duct-taping together and shipping this garbage. Feels bad.
+FROM node:16.10
+
+RUN useradd -d /tmp builder
+
+WORKDIR /usr/src/app
+COPY package.json yarn.lock ./
+RUN yarn install \
+      && mkdir /tmp/node_cache \
+      && chmod 1777 /tmp/node_cache \
+      && ln -s /tmp/node_cache node_modules/.cache
+COPY ./public public/
+COPY ./src src/
+
+ENV BUILD_PATH="/tmp/build"
+ENV VOLUME_MOUNT="/build"
+
+USER builder
+RUN npx standard
+CMD yarn build && cd /tmp && tar -czf $VOLUME_MOUNT/build.tar.gz build

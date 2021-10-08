@@ -1,0 +1,28 @@
+# The goal of this file is to get a development deployment running with
+# containers so that the feature specs can run.
+version: "3.3"
+services:
+  web:
+    build:
+      context: ./web
+      dockerfile: Dockerfile.serve
+    ports:
+    - "3000:80"
+    networks:
+    - frontend
+    - backend
+
+  features:
+    build:
+      context: ./features
+      dockerfile: support/Dockerfile
+    networks:
+    - frontend
+    depends_on:
+    - web
+    environment:
+      APP_URL: http://web:80
+
+networks:
+  frontend: {}
+  backend: {}

@@ -3,6 +3,21 @@ Matt's List
 
 I'm Matt and this is my to do list.
 
+Make commands
+-------------
+
+All the make commands rely on docker-compose, so you'll need that and
+docker installed and working in order to use them.
+
+You can run `make build` to build the static site in the `build`
+directory, and you can clean it up with `make clean`.
+
+You can also run tests with `make features` for acceptance tests and
+`make test` for unit tests.
+
+To build the static site and run it inside a container, you can run
+`make serve`.
+
 Glossary
 --------
 
