@@ -1,3 +1,4 @@
+@draft
 Feature: Routines
 
   In order to maintain my body and the place where I live

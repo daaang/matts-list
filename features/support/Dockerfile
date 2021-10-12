@@ -2,7 +2,13 @@ FROM ruby:3.0
 
 # Create the app user and ensure that bundle won't tolerate an outdated
 # Gemfile.lock.
-RUN useradd -d /tmp tester && bundle config --global frozen 1
+RUN useradd -d /tmp tester \
+      && bundle config --global frozen 1 \
+      && apt-get update \
+      && apt-get install -y firefox-esr \
+      && wget -O /tmp/driver.tar.gz https://github.com/mozilla/geckodriver/releases/download/v0.30.0/geckodriver-v0.30.0-linux64.tar.gz \
+      && cd /usr/local/bin \
+      && tar -xzf /tmp/driver.tar.gz
 
 # Build the dependencies. To create a new Gemfile, you can run the
 # following:
@@ -21,4 +27,4 @@ ENV CUCUMBER_PUBLISH_QUIET="true"
 
 USER tester
 RUN bundle exec standardrb
-CMD ["bundle", "exec", "cucumber"]
+CMD ["bundle", "exec", "cucumber", "--tags", "not @draft"]
