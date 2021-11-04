@@ -21,3 +21,10 @@
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+
+# When I set about doing this right, I'll actually put some effort into
+# each little thumbnail, but, for the moment, I'm just creating them
+# automatically. Once I do some by-hand work, I'll commit it.
+src/logo??.ico
+public/favicon.ico
+public/logo192.png
