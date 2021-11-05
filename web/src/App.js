@@ -1,6 +1,8 @@
+import List from './List'
+
 function App () {
   return (
-    <p>Hi, Matt!</p>
+    <List />
   )
 }
 

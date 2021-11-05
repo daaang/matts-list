@@ -1,126 +1,53 @@
 class Item
-  attr_reader :name
+  def initialize(li)
+    @li = li
+  end
 
-  def initialize(name)
-    @name = name
-    @is_complete = false
-    @is_optional = false
+  def name
+    li.text
   end
 
   def state
-    if @is_complete
-      :complete
-    elsif @is_optional
-      :optional
-    else
+    case li[:class]
+    when "item-due"
       :due
+    when "item-optional"
+      :optional
+    when "item-complete"
+      :complete
     end
-  end
-
-  def complete!
-    @is_complete = true
   end
 
   def inspect
     "<Item #{state.inspect} #{name.inspect}>"
   end
-end
-
-class List
-  def initialize
-    @items = []
-    @dismissed = {}
-  end
-
-  def visible
-    items.reject { |i| @dismissed.has_key?(i) }
-  end
-
-  def empty?
-    visible.empty?
-  end
-
-  def length
-    visible.length
-  end
-
-  def [](i)
-    visible[i]
-  end
-
-  def get_by_name(name)
-    visible.find { |i| i.name == name }
-  end
-
-  def include?(item)
-    visible.include?(item)
-  end
-
-  def add(item)
-    items << item
-  end
-
-  def dismiss(item)
-    @dismissed[item] = true
-  end
-
-  def reset!
-    items.reject! { |i| i.state == :complete }
-    @dismissed = {}
-  end
-
-  def move_to_top(item)
-    items.reject! { |i| i.equal? item }
-    items.unshift(item)
-  end
-
-  def move_to_bottom(item)
-    items.reject! { |i| i.equal? item }
-    items.push(item)
-  end
-
-  def move_between(item, after: nil, before: nil)
-    items.reject! { |i| i.equal? item }
-
-    # First, try to move it after the item called `after`. If `after` is
-    # nil or not on the list, then try to move the item before `before`.
-    # If `before` too is nil or not on the list, just move the item to
-    # the end of the list.
-    if after.nil? || items.index(after).nil?
-      if before.nil? || items.index(before).nil?
-        items.push(item)
-      else
-        items.insert(items.index(before), item)
-      end
-    else
-      items.insert(items.index(before) + 1, item)
-    end
-  end
-
-  def inspect
-    "<List #{visible.inspect}>"
-  end
 
   private
 
-  attr_reader :items
+  attr_reader :li
 end
 
 module KnowsTheUI
-  attr_reader :list
+  def list
+    all("li").map { |li| Item.new(li) }
+  end
 
   def get_an_empty_task_list
-    @list = List.new
+    visit("/")
+    click_button("Clear list")
   end
 
   def add_item(name)
-    item = Item.new(name)
-    list.add(item)
-    last_item_mentioned(item)
+    click_button("Add item")
+    fill_in(with: name)
+    click_button("Add")
+    last_item_mentioned(list.last)
   end
 
   def get_item_by_name(name)
-    last_item_mentioned(list.get_by_name(name))
+    items = list.select { |item| item.name == name }
+    expect(items.length).to eq(1)
+    last_item_mentioned(items[0])
   end
 
   def last_item_mentioned(item = :unset)
@@ -130,20 +57,21 @@ module KnowsTheUI
 
   def item_on_list?(item)
     last_item_mentioned(item)
-    list.include?(item)
+    list.any? { |i| i.name == item.name }
   end
 
   def dismiss_item(item)
     last_item_mentioned(item)
-    list.dismiss(item)
+    pending
   end
 
   def complete_the_item!
-    last_item_mentioned.complete!
+    # last_item_mentioned.complete!
+    pending
   end
 
   def daily_reset!
-    list.reset!
+    pending
   end
 
   def expect_order(order)
@@ -155,17 +83,17 @@ module KnowsTheUI
 
   def move_to_top(item)
     last_item_mentioned(item)
-    list.move_to_top(item)
+    pending
   end
 
   def move_to_bottom(item)
     last_item_mentioned(item)
-    list.move_to_bottom(item)
+    pending
   end
 
   def move_between(item, after: nil, before: nil)
     last_item_mentioned(item)
-    list.move_between(item, after: nil, before: before)
+    pending
   end
 end
 

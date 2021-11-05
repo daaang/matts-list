@@ -1,9 +1,7 @@
-/* global test, expect */
-import { render, screen } from '@testing-library/react'
+/* global test */
+import { render } from '@testing-library/react'
 import App from './App'
 
-test('renders learn react link', () => {
+test('the app renders', () => {
   render(<App />)
-  const linkElement = screen.getByText(/hi, matt/i)
-  expect(linkElement).toBeInTheDocument()
 })
