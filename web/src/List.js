@@ -21,11 +21,11 @@ class List extends React.Component {
   }
 
   doneAddingItem (value) {
-    const items = this.state.items.slice()
-    this.setState({
-      newItemForm: '',
-      items: items.concat([value])
-    })
+    this.setState({ newItemForm: '' })
+    if (value) {
+      const items = this.state.items.slice()
+      this.setState({ items: items.concat([value]) })
+    }
   }
 
   clearList () {
@@ -58,13 +58,14 @@ class AutoFocusTextForm extends React.Component {
     this.textboxRef.current.focus()
   }
 
-  handleSubmit () {
+  handleSubmit (e) {
+    e.preventDefault()
     this.props.onSubmit(this.textboxRef.current.value)
   }
 
   render () {
     return (
-      <form onSubmit={() => this.handleSubmit()}>
+      <form onSubmit={e => this.handleSubmit(e)}>
         <label htmlFor='auto-focus-textbox'>{this.props.labelText}</label>
         <input id='auto-focus-textbox' type='text' ref={this.textboxRef} />
         <input type='submit' value='Done' />

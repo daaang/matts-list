@@ -26,6 +26,20 @@ describe('a new List', () => {
       expect(queryInputNewItem()).toHaveFocus()
     })
 
+    describe('when the empty new item form is submitted', () => {
+      beforeEach(() => {
+        userEvent.click(screen.getByRole('button', { name: /done/i }))
+      })
+
+      test('the new item field is no longer present', () => {
+        expect(queryInputNewItem()).toBeNull()
+      })
+
+      test('no items have been added to the list', () => {
+        expect(screen.queryByRole('listitem')).toBeNull()
+      })
+    })
+
     describe('when "wash dishes" has been typed in', () => {
       beforeEach(() => {
         expect(screen.queryByText(/wash dishes/i)).toBeNull()
