@@ -43,3 +43,16 @@ might be on a list:
     Otherwise, it'll be gone tomorrow.
 
 -   The **daily reset** happens at a time of your choosing.
+
+Decisions
+---------
+
+1.  [Develop the API, static site, and acceptance tests in isolation][ADR-1]
+2.  [Use ruby for writing acceptance tests][ADR-2]
+3.  [Use the MIT license][ADR-3]
+4.  [Use Create React App for the static site][ADR-4]
+
+[ADR-1]: docs/adr/0001-develop-the-api-static-site-and-acceptance-tests-in-isolation.md
+[ADR-2]: docs/adr/0002-use-ruby-for-writing-acceptance-tests.md
+[ADR-3]: docs/adr/0003-use-the-mit-license.md
+[ADR-4]: docs/adr/0004-use-create-react-app-for-static-site.md
