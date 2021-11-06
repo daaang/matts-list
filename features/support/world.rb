@@ -40,7 +40,7 @@ module KnowsTheUI
   def add_item(name)
     click_button("Add item")
     fill_in(with: name)
-    click_button("Add")
+    click_button("Done")
     last_item_mentioned(list.last)
   end
 

@@ -1,45 +1,35 @@
 /* global describe, beforeEach, test, expect, document */
-/* global HTMLButtonElement */
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import List from './List'
 
-const getFocusedElement = () => { return document.activeElement || document.body }
-const getClearButton = () => screen.getByText(/clear list/i)
-const getAddItemButton = () => screen.getByText(/add item/i)
-const getNewItemField = () => screen.getByPlaceholderText(/new item/i)
-const queryNewItemField = () => screen.queryByPlaceholderText(/new item/i)
+const activeElement = () => { return document.activeElement || document.body }
+const getButtonClear = () => screen.getByRole('button', { name: /clear/i })
+const getButtonAddItem = () => screen.getByRole('button', { name: /add/i })
+const queryInputNewItem = () => screen.queryByRole('textbox', { name: /new item/i })
 
 describe('a new List', () => {
   beforeEach(() => {
     render(<List />)
   })
 
-  test('renders "clear list" button', () => {
-    expect(getClearButton()).toBeInstanceOf(HTMLButtonElement)
-  })
-
-  test('renders "add item" button', () => {
-    expect(getAddItemButton()).toBeInstanceOf(HTMLButtonElement)
-  })
-
   test('renders no text fields for new items', () => {
-    expect(queryNewItemField()).toBeNull()
+    expect(queryInputNewItem()).toBeNull()
   })
 
   describe('when the add item button has been clicked', () => {
     beforeEach(() => {
-      userEvent.click(getAddItemButton())
+      userEvent.click(getButtonAddItem())
     })
 
     test('a new item field has focus', () => {
-      expect(getNewItemField()).toHaveFocus()
+      expect(queryInputNewItem()).toHaveFocus()
     })
 
     describe('when "wash dishes" has been typed in', () => {
       beforeEach(() => {
         expect(screen.queryByText(/wash dishes/i)).toBeNull()
-        userEvent.type(getFocusedElement(), 'wash dishes{enter}', { skipClick: true })
+        userEvent.type(activeElement(), 'wash dishes{enter}', { skipClick: true })
       })
 
       test('an item called "wash dishes" is due', () => {
@@ -47,14 +37,14 @@ describe('a new List', () => {
       })
 
       test('the new item field is no longer present', () => {
-        expect(queryNewItemField()).toBeNull()
+        expect(queryInputNewItem()).toBeNull()
       })
 
       describe('when I add a second item', () => {
         beforeEach(() => {
-          userEvent.click(getAddItemButton())
+          userEvent.click(getButtonAddItem())
           expect(screen.queryByText(/put clothes away/i)).toBeNull()
-          userEvent.type(getFocusedElement(), 'put clothes away{enter}', { skipClick: true })
+          userEvent.type(activeElement(), 'put clothes away{enter}', { skipClick: true })
         })
 
         test('the new item is due', () => {
@@ -67,7 +57,7 @@ describe('a new List', () => {
 
         describe('when the clear list button has been clicked', () => {
           beforeEach(() => {
-            userEvent.click(getClearButton())
+            userEvent.click(getButtonClear())
           })
 
           test('both items are no longer visible', () => {

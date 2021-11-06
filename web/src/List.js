@@ -4,29 +4,27 @@ class List extends React.Component {
   constructor (props) {
     super(props)
     this.state = {
-      addingNewItem: false,
+      newItemForm: '',
       items: []
     }
-    this.newItemRef = React.createRef()
   }
 
-  addItem () {
+  startAddingItem () {
     this.setState({
-      addingNewItem: true
+      newItemForm: (
+        <AutoFocusTextForm
+          labelText='New item'
+          onSubmit={item => this.doneAddingItem(item)}
+        />
+      )
     })
   }
 
-  componentDidUpdate () {
-    if (this.newItemRef.current !== null) {
-      this.newItemRef.current.focus()
-    }
-  }
-
-  handleSubmitNewItem () {
+  doneAddingItem (value) {
     const items = this.state.items.slice()
     this.setState({
-      addingNewItem: false,
-      items: items.concat([this.newItemRef.current.value])
+      newItemForm: '',
+      items: items.concat([value])
     })
   }
 
@@ -35,28 +33,42 @@ class List extends React.Component {
   }
 
   render () {
-    const addItemForm = (
-      <form onSubmit={() => this.handleSubmitNewItem()}>
-        <input
-          type='text'
-          placeholder='New item...'
-          ref={this.newItemRef}
-        />
-        <button type='submit'>Add</button>
-      </form>
-    )
-
     return (
-      <div>
+      <>
         <ol>
           {this.state.items.map((item, index) => (
             <li className='item-due' key={index}>{item}</li>
           ))}
         </ol>
-        <div id='new-item-area'>{this.state.addingNewItem ? addItemForm : ''}</div>
+        {this.state.newItemForm}
         <button type='button' onClick={() => this.clearList()}>Clear list</button>
-        <button type='button' onClick={() => this.addItem()}>Add item</button>
-      </div>
+        <button type='button' onClick={() => this.startAddingItem()}>Add item</button>
+      </>
+    )
+  }
+}
+
+class AutoFocusTextForm extends React.Component {
+  constructor (props) {
+    super(props)
+    this.textboxRef = React.createRef()
+  }
+
+  componentDidMount () {
+    this.textboxRef.current.focus()
+  }
+
+  handleSubmit () {
+    this.props.onSubmit(this.textboxRef.current.value)
+  }
+
+  render () {
+    return (
+      <form onSubmit={() => this.handleSubmit()}>
+        <label htmlFor='auto-focus-textbox'>{this.props.labelText}</label>
+        <input id='auto-focus-textbox' type='text' ref={this.textboxRef} />
+        <input type='submit' value='Done' />
+      </form>
     )
   }
 }
