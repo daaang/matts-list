@@ -14,4 +14,4 @@ services:
     command:
     - "bash"
     - "-c"
-    - "npx standard && yarn test --watchAll=false"
+    - "npx standard && yarn test --verbose --coverage --coverageReporters=text-summary --watchAll=false"

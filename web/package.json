@@ -3,6 +3,15 @@
   "version": "0.1.0",
   "license": "MIT",
   "private": true,
+  "jest": {
+    "collectCoverageFrom": [
+      "src/**/*.js",
+      "!src/index.js"
+    ],
+    "coverageThreshold": {
+      "global": { "lines": 100 }
+    }
+  },
   "dependencies": {
     "@testing-library/jest-dom": "^5.11.4",
     "@testing-library/react": "^11.1.0",
