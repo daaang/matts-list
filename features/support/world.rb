@@ -1,30 +1,25 @@
 class Item
+  attr_reader :li
+
   def initialize(li)
     @li = li
   end
 
   def name
-    li.text
+    li.find("label").text
   end
 
   def state
-    case li[:class]
-    when "item-due"
-      :due
-    when "item-optional"
-      :optional
-    when "item-complete"
+    if li.find("input[type=checkbox]").checked?
       :complete
+    elsif li[:class] == "item-due"
+      :due
     end
   end
 
   def inspect
     "<Item #{state.inspect} #{name.inspect}>"
   end
-
-  private
-
-  attr_reader :li
 end
 
 module KnowsTheUI
@@ -66,8 +61,7 @@ module KnowsTheUI
   end
 
   def complete_the_item!
-    # last_item_mentioned.complete!
-    pending
+    last_item_mentioned.li.check
   end
 
   def daily_reset!

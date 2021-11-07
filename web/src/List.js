@@ -3,9 +3,10 @@ import React from 'react'
 class List extends React.Component {
   constructor (props) {
     super(props)
+    const initItems = props.initItems || []
     this.state = {
       newItemForm: '',
-      items: []
+      items: initItems.slice()
     }
   }
 
@@ -37,7 +38,10 @@ class List extends React.Component {
       <>
         <ol>
           {this.state.items.map((item, index) => (
-            <li className='item-due' key={index}>{item}</li>
+            <li className='item-due' key={index}>
+              <input id={'item-' + index} type='checkbox' />
+              <label htmlFor={'item-' + index}>{item}</label>
+            </li>
           ))}
         </ol>
         {this.state.newItemForm}
