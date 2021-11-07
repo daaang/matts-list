@@ -38,16 +38,49 @@ class List extends React.Component {
       <>
         <ol>
           {this.state.items.map((item, index) => (
-            <li className='item-due' key={index}>
-              <input id={'item-' + index} type='checkbox' />
-              <label htmlFor={'item-' + index}>{item}</label>
-            </li>
+            <Item key={index} id={'item-' + index} name={item} />
           ))}
         </ol>
         {this.state.newItemForm}
         <button type='button' onClick={() => this.clearList()}>Clear list</button>
         <button type='button' onClick={() => this.startAddingItem()}>Add item</button>
       </>
+    )
+  }
+}
+
+class Item extends React.Component {
+  constructor (props) {
+    super(props)
+    this.checkboxRef = React.createRef()
+    this.state = {
+      cssClass: 'item-due'
+    }
+  }
+
+  componentDidMount () {
+    this.matchClassToCheckbox()
+  }
+
+  matchClassToCheckbox () {
+    if (this.checkboxRef.current.checked) {
+      this.setState({ cssClass: 'item-complete' })
+    } else {
+      this.setState({ cssClass: 'item-due' })
+    }
+  }
+
+  render () {
+    return (
+      <li className={this.state.cssClass}>
+        <input
+          id={this.props.id}
+          type='checkbox'
+          ref={this.checkboxRef}
+          onChange={() => this.matchClassToCheckbox()}
+        />
+        <label htmlFor={this.props.id}>{this.props.name}</label>
+      </li>
     )
   }
 }
