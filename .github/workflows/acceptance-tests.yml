@@ -1,4 +1,4 @@
-name: Run Tests
+name: Acceptance Tests
 
 on:
   push:
@@ -10,7 +10,5 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
-    - name: Run unit tests
-      run: 'make test'
     - name: Run acceptance tests
       run: 'make features'
