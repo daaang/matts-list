@@ -2,7 +2,7 @@
 # intention is to deploy the static files to a CDN. This container
 # essentially simulates that by deploying those same static files to an
 # otherwise unconfigured nginx web server.
-FROM node:16.10 as builder
+FROM node:17.0.1 as builder
 
 WORKDIR /usr/src/app
 COPY package.json yarn.lock ./
