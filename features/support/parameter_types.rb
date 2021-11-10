@@ -1,5 +1,5 @@
 ParameterType(
-  name: "item_state",
+  name: "item_phase",
   regexp: /due|optional|complete/,
   type: Symbol,
   transformer: ->(s) { s.to_sym }

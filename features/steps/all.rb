@@ -16,12 +16,12 @@ Then("that item is called {string}") do |name|
   expect(last_item_mentioned.name).to eq name
 end
 
-Then("{string} is not {item_state}") do |name, state|
-  expect(get_item_by_name(name).state).not_to be state
+Then("{string} is not {item_phase}") do |name, phase|
+  expect(get_item_by_name(name).phase).not_to be phase
 end
 
-Then("{string} is {item_state}") do |name, state|
-  expect(get_item_by_name(name).state).to be state
+Then("{string} is {item_phase}") do |name, phase|
+  expect(get_item_by_name(name).phase).to be phase
 end
 
 Given("an item is on my task list") do
@@ -38,8 +38,8 @@ Then(/the item is (?:still|back) on my list/) do
   expect(item_on_list?(last_item_mentioned)).to be true
 end
 
-Then("I can see that the item is {item_state}") do |state|
-  expect(last_item_mentioned.state).to be state
+Then("I can see that the item is {item_phase}") do |phase|
+  expect(last_item_mentioned.phase).to be phase
 end
 
 Given("I have completed an item on my task list") do
@@ -67,8 +67,8 @@ Given("I have dismissed an item on my task list") do
   dismiss_item(last_item_mentioned)
 end
 
-Given("the item isn't {item_state}") do |state|
-  expect(last_item_mentioned.state).not_to be state
+Given("the item isn't {item_phase}") do |phase|
+  expect(last_item_mentioned.phase).not_to be phase
 end
 
 Given("there are five items on my task list in order: {item_order}") do |order|

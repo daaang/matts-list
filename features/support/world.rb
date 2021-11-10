@@ -9,7 +9,7 @@ class Item
     li.find("label").text
   end
 
-  def state
+  def phase
     if li.find("input[type=checkbox]").checked?
       :complete
     elsif li[:class] == "item-due"
@@ -18,7 +18,7 @@ class Item
   end
 
   def inspect
-    "<Item #{state.inspect} #{name.inspect}>"
+    "<Item #{phase.inspect} #{name.inspect}>"
   end
 end
 
