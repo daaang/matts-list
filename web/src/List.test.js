@@ -1,4 +1,4 @@
-/* global describe, beforeEach, test, expect, document */
+/* global jest, describe, beforeEach, afterEach, test, expect, document */
 import { render, screen, getByRole } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import List from './List'
@@ -6,6 +6,7 @@ import List from './List'
 const activeElement = () => { return document.activeElement || document.body }
 const getButtonClear = () => screen.getByRole('button', { name: /clear/i })
 const getButtonAddItem = () => screen.getByRole('button', { name: /add/i })
+const getButtonReset = () => screen.getByRole('button', { name: /reset/i })
 const queryInputNewItem = () => screen.queryByRole('textbox', { name: /new item/i })
 
 const getChildElement = (element, tagName) =>
@@ -20,13 +21,20 @@ class ListItem {
     return getChildElement(this.li, 'label').textContent
   }
 
-  get state () {
+  get phase () {
     if (getByRole(this.li, 'checkbox').checked) {
       return 'complete'
     } else if (this.li.classList.contains('item-due')) {
       return 'due'
     } else {
       return 'unknown'
+    }
+  }
+
+  toJSON () {
+    return {
+      name: this.name,
+      phase: this.phase
     }
   }
 }
@@ -40,7 +48,7 @@ const queryListItem = name => {
   }
 }
 
-const expectListItemState = (item, state) => {
+const expectListItemPhase = (item, phase) => {
   if (!item) {
     return {
       pass: false,
@@ -48,26 +56,26 @@ const expectListItemState = (item, state) => {
     }
   }
 
-  if (item.state === state) {
+  if (item.phase === phase) {
     return {
       pass: true,
-      message: () => `expected list item "${item.name}" not to be ${state}`
+      message: () => `expected ${JSON.stringify(item)} not to be ${phase}`
     }
   } else {
     return {
       pass: false,
-      message: () => `expected list item "${item.name}" to be ${state}`
+      message: () => `expected ${JSON.stringify(item)} to be ${phase}`
     }
   }
 }
 
 expect.extend({
   toBeComplete (received) {
-    return expectListItemState(received, 'complete')
+    return expectListItemPhase(received, 'complete')
   },
 
   toBeDue (received) {
-    return expectListItemState(received, 'due')
+    return expectListItemPhase(received, 'due')
   }
 })
 
@@ -179,6 +187,60 @@ describe('a list with three items', () => {
         expect(queryListItem(/fold clothes/i)).not.toBeComplete()
         expect(queryListItem(/fold clothes/i)).toBeDue()
       })
+    })
+  })
+})
+
+describe('a list with a complete item', () => {
+  beforeEach(() => {
+    jest.useFakeTimers('modern')
+    render(
+      <List
+        tickPeriod={10 * 60 * 1000}
+        initItems={[
+          { name: 'Wash Dishes', phase: 'complete' },
+          'Fold Clothes',
+          'Sweep Floor'
+        ]}
+      />
+    )
+  })
+
+  afterEach(() => {
+    jest.useRealTimers()
+  })
+
+  test('the complete item is visible and complete', () => {
+    expect(queryListItem(/wash dishes/i)).toBeComplete()
+  })
+
+  describe('after a day passes', () => {
+    beforeEach(() => {
+      jest.advanceTimersByTime(24 * 60 * 60 * 1000)
+    })
+
+    test('the complete item is no longer on the list', () => {
+      expect(queryListItem(/wash dishes/i)).toBeNull()
+    })
+
+    test('any due items are still on the list', () => {
+      expect(queryListItem(/fold clothes/i)).toBeDue()
+      expect(queryListItem(/sweep floor/i)).toBeDue()
+    })
+  })
+
+  describe('when the reset button is pressed', () => {
+    beforeEach(() => {
+      userEvent.click(getButtonReset())
+    })
+
+    test('the complete item is no longer on the list', () => {
+      expect(queryListItem(/wash dishes/i)).toBeNull()
+    })
+
+    test('any due items are still on the list', () => {
+      expect(queryListItem(/fold clothes/i)).toBeDue()
+      expect(queryListItem(/sweep floor/i)).toBeDue()
     })
   })
 })

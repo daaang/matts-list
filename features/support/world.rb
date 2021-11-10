@@ -65,7 +65,7 @@ module KnowsTheUI
   end
 
   def daily_reset!
-    pending
+    click_button("Daily reset")
   end
 
   def expect_order(order)
