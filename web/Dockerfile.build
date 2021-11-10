@@ -34,7 +34,10 @@ RUN apt-get update \
       && yarn install \
       && mkdir /tmp/node_cache \
       && chmod 1777 /tmp/node_cache \
-      && ln -s /tmp/node_cache node_modules/.cache
+      && ln -s /tmp/node_cache node_modules/.cache \
+      && mkdir /tmp/coverage \
+      && chmod 1777 /tmp/coverage \
+      && ln -s /tmp/coverage coverage
 COPY ./public public/
 RUN convert -resize x192 public/logo512.png public/logo192.png \
       && convert -resize x64 public/logo512.png /tmp/logo64.ico \

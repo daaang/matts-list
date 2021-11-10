@@ -11,7 +11,9 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.build
+    environment:
+      CI: "true"
     command:
     - "bash"
     - "-c"
-    - "npx standard && yarn test --verbose --coverage --coverageReporters=text-summary --watchAll=false"
+    - "npx standard && yarn test --verbose --coverage"
