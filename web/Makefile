@@ -1,4 +1,4 @@
-.PHONY: clean test containers
+.PHONY: clean test containers teardown
 
 build: containers
 	mkdir -p build
@@ -9,6 +9,9 @@ build: containers
 
 clean:
 	rm -rf build
+
+teardown:
+	docker-compose down
 
 test: containers
 	docker-compose run test

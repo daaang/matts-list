@@ -5,3 +5,7 @@
 .item-complete {
   background-color: #cccccc;
 }
+
+[aria-hidden=true] {
+  display: none;
+}

@@ -1,4 +1,4 @@
-.PHONY: clean test features serve containers
+.PHONY: clean test features serve containers teardown
 
 build:
 	$(MAKE) -C web build
@@ -11,6 +11,10 @@ clean:
 
 test:
 	$(MAKE) -C web test
+
+teardown:
+	$(MAKE) -C web teardown
+	docker-compose down
 
 features: containers
 	docker-compose run features

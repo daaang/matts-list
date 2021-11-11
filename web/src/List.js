@@ -41,7 +41,11 @@ class List extends React.Component {
   }
 
   performReset () {
-    this.setState({ items: this.state.items.filter(i => i.phase === 'due') })
+    this.setState({
+      items: this.state.items.filter(i => i.phase === 'due').map(i => {
+        return { name: i.name, phase: i.phase }
+      })
+    })
   }
 
   startAddingItem () {
@@ -78,6 +82,18 @@ class List extends React.Component {
     this.setState({ items: before.concat([item]).concat(after) })
   }
 
+  dismissItem (itemIndex) {
+    const before = this.state.items.slice(0, itemIndex)
+    const after = this.state.items.slice(itemIndex + 1)
+    const item = {
+      name: this.state.items[itemIndex].name,
+      phase: this.state.items[itemIndex].phase,
+      dismissed: true
+    }
+
+    this.setState({ items: before.concat([item]).concat(after) })
+  }
+
   render () {
     return (
       <>
@@ -88,7 +104,9 @@ class List extends React.Component {
               id={'item-' + index}
               name={item.name}
               phase={item.phase}
+              dismissed={item.dismissed}
               onChange={phase => this.changePhase(index, phase)}
+              onDismiss={() => this.dismissItem(index)}
             />
           ))}
         </ol>
@@ -104,8 +122,16 @@ class List extends React.Component {
 }
 
 function Item (props) {
+  const classNames = []
+
+  if (props.phase === 'complete') {
+    classNames.push('item-complete')
+  } else {
+    classNames.push('item-due')
+  }
+
   return (
-    <li className={(props.phase === 'complete') ? 'item-complete' : 'item-due'}>
+    <li className={classNames.join(' ')} aria-hidden={props.dismissed}>
       <input
         id={props.id}
         type='checkbox'
@@ -113,6 +139,13 @@ function Item (props) {
         onChange={event => props.onChange(event.target.checked ? 'complete' : 'due')}
       />
       <label htmlFor={props.id}>{props.name}</label>
+      <button
+        aria-label={'Dismiss ' + props.name + ' until tomorrow'}
+        title='Dismiss until tomorrow'
+        onClick={() => props.onDismiss()}
+      >
+        ×
+      </button>
     </li>
   )
 }

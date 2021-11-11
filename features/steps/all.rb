@@ -61,14 +61,11 @@ When("I dismiss the item") do
   dismiss_item(last_item_mentioned)
 end
 
-Given("I have dismissed an item on my task list") do
+Given("I have dismissed a(n) {item_phase} item on my task list") do |phase|
   get_an_empty_task_list
   add_item("do something stressful")
+  expect(last_item_mentioned.phase).to be phase
   dismiss_item(last_item_mentioned)
-end
-
-Given("the item isn't {item_phase}") do |phase|
-  expect(last_item_mentioned.phase).not_to be phase
 end
 
 Given("there are five items on my task list in order: {item_order}") do |order|

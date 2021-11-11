@@ -33,8 +33,7 @@ Feature: Items on Lists
     Then the item is no longer on my list
 
   Scenario: Displaying items that were dismissed yesterday
-    Given I have dismissed an item on my task list
-    And the item isn't complete
+    Given I have dismissed a due item on my task list
     When the daily reset occurs
     Then the item is back on my list
 

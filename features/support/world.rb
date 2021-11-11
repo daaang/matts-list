@@ -57,7 +57,7 @@ module KnowsTheUI
 
   def dismiss_item(item)
     last_item_mentioned(item)
-    pending
+    click_button("Dismiss #{item.name}")
   end
 
   def complete_the_item!

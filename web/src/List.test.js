@@ -189,9 +189,19 @@ describe('a list with three items', () => {
       })
     })
   })
+
+  describe('when an item is dismissed', () => {
+    beforeEach(() => {
+      userEvent.click(screen.getByRole('button', { name: /dismiss sweep floor/i }))
+    })
+
+    test('the item is no longer visible', () => {
+      expect(queryListItem(/sweep floor/i)).toBeNull()
+    })
+  })
 })
 
-describe('a list with a complete item', () => {
+describe('a list with a complete item and a dismissed item', () => {
   beforeEach(() => {
     jest.useFakeTimers('modern')
     render(
@@ -199,7 +209,7 @@ describe('a list with a complete item', () => {
         tickPeriod={10 * 60 * 1000}
         initItems={[
           { name: 'Wash Dishes', phase: 'complete' },
-          'Fold Clothes',
+          { name: 'Fold Clothes', phase: 'due', dismissed: 'true' },
           'Sweep Floor'
         ]}
       />
@@ -214,6 +224,10 @@ describe('a list with a complete item', () => {
     expect(queryListItem(/wash dishes/i)).toBeComplete()
   })
 
+  test('the dismissed item is not visible', () => {
+    expect(queryListItem(/fold clothes/i)).toBeNull()
+  })
+
   describe('after a day passes', () => {
     beforeEach(() => {
       jest.advanceTimersByTime(24 * 60 * 60 * 1000)
@@ -223,8 +237,11 @@ describe('a list with a complete item', () => {
       expect(queryListItem(/wash dishes/i)).toBeNull()
     })
 
-    test('any due items are still on the list', () => {
+    test('the dismissed item is back on the list', () => {
       expect(queryListItem(/fold clothes/i)).toBeDue()
+    })
+
+    test('any due items are still on the list', () => {
       expect(queryListItem(/sweep floor/i)).toBeDue()
     })
   })
@@ -238,8 +255,11 @@ describe('a list with a complete item', () => {
       expect(queryListItem(/wash dishes/i)).toBeNull()
     })
 
-    test('any due items are still on the list', () => {
+    test('the dismissed item is back on the list', () => {
       expect(queryListItem(/fold clothes/i)).toBeDue()
+    })
+
+    test('any due items are still on the list', () => {
       expect(queryListItem(/sweep floor/i)).toBeDue()
     })
   })
