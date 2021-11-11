@@ -246,6 +246,26 @@ describe('a list with a complete item and a dismissed item', () => {
     })
   })
 
+  describe('when the complete item is dismissed', () => {
+    beforeEach(() => {
+      userEvent.click(screen.getByRole('button', { name: /dismiss wash dishes/i }))
+    })
+
+    test('the complete item is no longer on the list', () => {
+      expect(queryListItem(/wash dishes/i)).toBeNull()
+    })
+
+    describe('after a day passes', () => {
+      beforeEach(() => {
+        jest.advanceTimersByTime(24 * 60 * 60 * 1000)
+      })
+
+      test('the complete item is still not on the list', () => {
+        expect(queryListItem(/wash dishes/i)).toBeNull()
+      })
+    })
+  })
+
   describe('when the reset button is pressed', () => {
     beforeEach(() => {
       userEvent.click(getButtonReset())
