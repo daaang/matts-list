@@ -23,7 +23,7 @@
 #
 # Yeah, I don't know. I'm right here in the initial commit, and I'm
 # already duct-taping together and shipping this garbage. Feels bad.
-FROM node:16.10
+FROM node:16.13.0
 
 RUN useradd -d /tmp builder
 
