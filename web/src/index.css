@@ -1,15 +1,44 @@
-.item-due {
-  background-color: #ffff99;
-}
-
-.item-complete {
-  background-color: #cccccc;
+#root {
+  width: 40ex;
+  margin: 0 auto;
 }
 
 [aria-hidden=true] {
   display: none;
 }
 
+ol {
+  list-style-type: none;
+  padding: 0;
+}
+
+ol li {
+  margin: 1ex;
+  padding: 1ex;
+  border: #000000 solid 1ex;
+  border-radius: 1.5ex;
+}
+
+ol li input[type=checkbox] {
+  float: left;
+  margin: 0 1ex 0 0;
+}
+
+.item-buttons {
+  float: right;
+}
+
+.item-due {
+  background-color: #ffff99;
+  border-color: #998833;
+}
+
+.item-complete {
+  background-color: #cccccc;
+  border-color: #666666;
+}
+
 .item-dragging {
-  opacity: .5;
+  background-color: transparent;
+  border-color: #cccccc;
 }

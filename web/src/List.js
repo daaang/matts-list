@@ -243,29 +243,31 @@ function Item (props) {
         onChange={event => props.onChange(event.target.checked ? 'complete' : 'due')}
       />
       <label htmlFor={props.id}>{props.children}</label>
-      <button
-        aria-label={'Move up ' + props.children}
-        title='Move up'
-        disabled={props.position === 'top' || props.position === 'only'}
-        onClick={() => props.onMoveUp()}
-      >
-        ↑
-      </button>
-      <button
-        aria-label={'Move down ' + props.children}
-        title='Move down'
-        disabled={props.position === 'bottom' || props.position === 'only'}
-        onClick={() => props.onMoveDown()}
-      >
-        ↓
-      </button>
-      <button
-        aria-label={'Dismiss ' + props.children + ' until tomorrow'}
-        title='Dismiss until tomorrow'
-        onClick={() => props.onDismiss()}
-      >
-        ×
-      </button>
+      <div className='item-buttons'>
+        <button
+          aria-label={'Move up ' + props.children}
+          title='Move up'
+          disabled={props.position === 'top' || props.position === 'only'}
+          onClick={() => props.onMoveUp()}
+        >
+          ↑
+        </button>
+        <button
+          aria-label={'Move down ' + props.children}
+          title='Move down'
+          disabled={props.position === 'bottom' || props.position === 'only'}
+          onClick={() => props.onMoveDown()}
+        >
+          ↓
+        </button>
+        <button
+          aria-label={'Dismiss ' + props.children + ' until tomorrow'}
+          title='Dismiss until tomorrow'
+          onClick={() => props.onDismiss()}
+        >
+          ×
+        </button>
+      </div>
     </li>
   )
 }
