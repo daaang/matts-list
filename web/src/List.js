@@ -1,4 +1,5 @@
 import React from 'react'
+import { nanoid } from 'nanoid'
 
 class List extends React.Component {
   constructor (props) {
@@ -18,9 +19,18 @@ class List extends React.Component {
       tickPeriod: this.props.tickPeriod || 5000,
       items: initItems.map(i => {
         if (typeof i === 'string') {
-          return { name: i, phase: 'due' }
+          return {
+            id: nanoid(),
+            name: i,
+            phase: 'due'
+          }
         } else {
-          return i
+          return {
+            id: nanoid(),
+            name: i.name,
+            phase: i.phase,
+            dismissed: i.dismissed
+          }
         }
       })
     }
@@ -46,7 +56,7 @@ class List extends React.Component {
   performReset () {
     this.setState({
       items: this.state.items.filter(i => i.phase === 'due').map(i => {
-        return { name: i.name, phase: i.phase }
+        return { id: i.id, name: i.name, phase: i.phase }
       })
     })
   }
@@ -66,7 +76,13 @@ class List extends React.Component {
     this.setState({ newItemForm: '' })
     if (value) {
       const items = this.state.items.slice()
-      this.setState({ items: items.concat([{ name: value, phase: 'due' }]) })
+      this.setState({
+        items: items.concat([{
+          id: nanoid(),
+          name: value,
+          phase: 'due'
+        }])
+      })
     }
   }
 
@@ -78,6 +94,7 @@ class List extends React.Component {
     const before = this.state.items.slice(0, itemIndex)
     const after = this.state.items.slice(itemIndex + 1)
     const item = {
+      id: this.state.items[itemIndex].id,
       name: this.state.items[itemIndex].name,
       phase: itemPhase
     }
@@ -89,6 +106,7 @@ class List extends React.Component {
     const before = this.state.items.slice(0, itemIndex)
     const after = this.state.items.slice(itemIndex + 1)
     const item = {
+      id: this.state.items[itemIndex].id,
       name: this.state.items[itemIndex].name,
       phase: this.state.items[itemIndex].phase,
       dismissed: true
@@ -97,22 +115,90 @@ class List extends React.Component {
     this.setState({ items: before.concat([item]).concat(after) })
   }
 
+  moveUpItem (itemIndex) {
+    const before = this.state.items.slice(0, itemIndex)
+    const after = this.state.items.slice(itemIndex + 1)
+    const item = this.state.items[itemIndex]
+
+    after.unshift(before.pop())
+    before.push(item)
+    this.setState({ items: before.concat(after) })
+  }
+
+  moveDownItem (itemIndex) {
+    const before = this.state.items.slice(0, itemIndex)
+    const after = this.state.items.slice(itemIndex + 1)
+    const item = this.state.items[itemIndex]
+
+    before.push(after.shift())
+    before.push(item)
+    this.setState({ items: before.concat(after) })
+  }
+
+  itemPosition (itemIndex) {
+    if (this.state.items.length === 1) return 'only'
+    else if (itemIndex === 0) return 'top'
+    else if (itemIndex === this.state.items.length - 1) return 'bottom'
+    else return 'middle'
+  }
+
+  startDraggingItem (itemIndex, event) {
+    this.setState({ draggingItem: itemIndex })
+  }
+
+  dragOverItem (itemIndex, event) {
+    if (itemIndex < this.state.draggingItem) {
+      const before = this.state.items.slice(0, itemIndex)
+      const after = this.state.items.slice(itemIndex, this.state.draggingItem)
+      const last = this.state.items.slice(this.state.draggingItem + 1)
+
+      before.push(this.state.items[this.state.draggingItem])
+      this.setState({
+        items: before.concat(after).concat(last),
+        draggingItem: itemIndex
+      })
+    } else {
+      const first = this.state.items.slice(0, this.state.draggingItem)
+      const before = this.state.items.slice(this.state.draggingItem + 1, itemIndex + 1)
+      const after = this.state.items.slice(itemIndex + 1)
+
+      before.push(this.state.items[this.state.draggingItem])
+      this.setState({
+        items: first.concat(before).concat(after),
+        draggingItem: itemIndex
+      })
+    }
+  }
+
+  stopDraggingItem (itemIndex, event) {
+    this.setState({ draggingItem: undefined })
+  }
+
   render () {
     return (
       <>
         <ol>
-          {this.state.items.map((item, index) => (
-            <Item
-              key={index}
-              id={'item-' + index}
-              phase={item.phase}
-              dismissed={item.dismissed}
-              onChange={phase => this.changePhase(index, phase)}
-              onDismiss={() => this.dismissItem(index)}
-            >
-              {item.name}
-            </Item>
-          ))}
+          {this.state.items.map((item, index) => {
+            return (
+              <Item
+                key={item.id}
+                id={'item-' + index}
+                phase={item.phase}
+                dismissed={item.dismissed}
+                position={this.itemPosition(index)}
+                isDragging={index === this.state.draggingItem}
+                onChange={phase => this.changePhase(index, phase)}
+                onDismiss={() => this.dismissItem(index)}
+                onMoveUp={() => this.moveUpItem(index)}
+                onMoveDown={() => this.moveDownItem(index)}
+                onDragStart={event => this.startDraggingItem(index, event)}
+                onDragEnter={event => this.dragOverItem(index, event)}
+                onDragEnd={event => this.stopDraggingItem(index, event)}
+              >
+                {item.name}
+              </Item>
+            )
+          })}
         </ol>
         {this.state.newItemForm}
         <button type='button' onClick={() => this.startAddingItem()}>Add item</button>
@@ -128,6 +214,11 @@ class List extends React.Component {
 function Item (props) {
   const classNames = []
 
+  if (props.isDragging) classNames.push('item-dragging')
+  const onDragOver = (props.isDragging)
+    ? event => { event.preventDefault() }
+    : () => null
+
   if (props.phase === 'complete') {
     classNames.push('item-complete')
   } else {
@@ -135,7 +226,16 @@ function Item (props) {
   }
 
   return (
-    <li className={classNames.join(' ')} aria-hidden={props.dismissed}>
+    <li
+      className={classNames.join(' ')}
+      aria-hidden={props.dismissed}
+      draggable='true'
+      onDragStart={event => props.onDragStart(event)}
+      onDragEnter={event => props.onDragEnter(event)}
+      onDragEnd={event => props.onDragEnd(event)}
+      onDragOver={onDragOver}
+      onDrop={() => null}
+    >
       <input
         id={props.id}
         type='checkbox'
@@ -143,6 +243,22 @@ function Item (props) {
         onChange={event => props.onChange(event.target.checked ? 'complete' : 'due')}
       />
       <label htmlFor={props.id}>{props.children}</label>
+      <button
+        aria-label={'Move up ' + props.children}
+        title='Move up'
+        disabled={props.position === 'top' || props.position === 'only'}
+        onClick={() => props.onMoveUp()}
+      >
+        ↑
+      </button>
+      <button
+        aria-label={'Move down ' + props.children}
+        title='Move down'
+        disabled={props.position === 'bottom' || props.position === 'only'}
+        onClick={() => props.onMoveDown()}
+      >
+        ↓
+      </button>
       <button
         aria-label={'Dismiss ' + props.children + ' until tomorrow'}
         title='Dismiss until tomorrow'

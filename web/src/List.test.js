@@ -1,5 +1,5 @@
 /* global jest, describe, beforeEach, afterEach, test, expect */
-import { render, screen, getByRole } from '@testing-library/react'
+import { render, screen, getByRole, fireEvent } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import List from './List'
 
@@ -23,7 +23,7 @@ describe('a new List', () => {
 
     describe('when the empty new item form is submitted', () => {
       beforeEach(() => {
-        userEvent.click(screen.getByRole('button', { name: /done/i }))
+        userEvent.click(getButton(/done/i))
       })
 
       test('the new item field is no longer present', () => {
@@ -38,7 +38,11 @@ describe('a new List', () => {
     describe('when "wash dishes" has been typed in', () => {
       beforeEach(() => {
         expect(queryListItem(/wash dishes/i)).toBeNull()
-        userEvent.type(activeElement(), 'wash dishes{enter}', { skipClick: true })
+        userEvent.type(
+          activeElement(),
+          'wash dishes{enter}',
+          { skipClick: true }
+        )
       })
 
       test('an item called "wash dishes" is due', () => {
@@ -53,7 +57,11 @@ describe('a new List', () => {
         beforeEach(() => {
           userEvent.click(getButtonAddItem())
           expect(queryListItem(/put clothes away/i)).toBeNull()
-          userEvent.type(activeElement(), 'put clothes away{enter}', { skipClick: true })
+          userEvent.type(
+            activeElement(),
+            'put clothes away{enter}',
+            { skipClick: true }
+          )
         })
 
         test('the new item is due', () => {
@@ -79,6 +87,19 @@ describe('a new List', () => {
   })
 })
 
+describe('a list with one item', () => {
+  beforeEach(() => {
+    render(
+      <List initItems={['Wash Dishes']} />
+    )
+  })
+
+  test('the item cannot be moved', () => {
+    expect(getButton(/move up wash dishes/i)).toBeDisabled()
+    expect(getButton(/move down wash dishes/i)).toBeDisabled()
+  })
+})
+
 describe('a list with three items', () => {
   beforeEach(() => {
     render(
@@ -92,9 +113,17 @@ describe('a list with three items', () => {
     expect(queryListItem(/sweep floor/i)).toBeDue()
   })
 
+  test('the top item cannot be moved up', () => {
+    expect(getButton(/move up wash dishes/i)).toBeDisabled()
+  })
+
+  test('the bottom item cannot be moved down', () => {
+    expect(getButton(/move down sweep floor/i)).toBeDisabled()
+  })
+
   describe('when an item is completed', () => {
     beforeEach(() => {
-      userEvent.click(screen.getByRole('checkbox', { name: /fold clothes/i }))
+      userEvent.click(getCheckbox(/fold clothes/i))
     })
 
     test('the item is complete instead of due', () => {
@@ -104,7 +133,7 @@ describe('a list with three items', () => {
 
     describe('when the item is reopened', () => {
       beforeEach(() => {
-        userEvent.click(screen.getByRole('checkbox', { name: /fold clothes/i }))
+        userEvent.click(getCheckbox(/fold clothes/i))
       })
 
       test('the item is due again', () => {
@@ -116,11 +145,137 @@ describe('a list with three items', () => {
 
   describe('when an item is dismissed', () => {
     beforeEach(() => {
-      userEvent.click(screen.getByRole('button', { name: /dismiss sweep floor/i }))
+      userEvent.click(getButton(/dismiss sweep floor/i))
     })
 
     test('the item is no longer visible', () => {
       expect(queryListItem(/sweep floor/i)).toBeNull()
+    })
+  })
+
+  describe('when the second item is moved up', () => {
+    beforeEach(() => {
+      userEvent.click(getButton(/move up fold clothes/i))
+    })
+
+    test('the second item is on top of the list', () => {
+      expect(queryAllListItems()[0].name).toMatch(/fold clothes/i)
+    })
+
+    test('the top item is now second on the list', () => {
+      expect(queryAllListItems()[1].name).toMatch(/wash dishes/i)
+    })
+  })
+
+  describe('when the second item is moved down', () => {
+    beforeEach(() => {
+      userEvent.click(getButton(/move down fold clothes/i))
+    })
+
+    test('the second item is on the bottom of the list', () => {
+      expect(queryAllListItems()[2].name).toMatch(/fold clothes/i)
+    })
+
+    test('the bottom item is now second from last', () => {
+      expect(queryAllListItems()[1].name).toMatch(/sweep floor/i)
+    })
+  })
+
+  describe('dragging items: [A, B, C]', () => {
+    const itemA = /wash dishes/i
+    const itemB = /fold clothes/i
+    const itemC = /sweep floor/i
+
+    test('all three items are draggable', () => {
+      queryAllListItems().forEach(item => {
+        expect(item.li).toHaveAttribute('draggable', 'true')
+      })
+    })
+
+    describe('dragging A down by one', () => {
+      beforeEach(() => {
+        dragPath(queryListItem(itemA).li, [
+          queryListItem(itemB).li
+        ])
+      })
+
+      test('the order is [B, A, C]', () => {
+        expect(queryAllListItems()[0].name).toMatch(itemB)
+        expect(queryAllListItems()[1].name).toMatch(itemA)
+        expect(queryAllListItems()[2].name).toMatch(itemC)
+      })
+    })
+
+    describe('dragging A down to the bottom', () => {
+      beforeEach(() => {
+        dragPath(queryListItem(itemA).li, [
+          queryListItem(itemB).li,
+          queryListItem(itemC).li
+        ])
+      })
+
+      test('the order is [B, C, A]', () => {
+        expect(queryAllListItems()[0].name).toMatch(itemB)
+        expect(queryAllListItems()[1].name).toMatch(itemC)
+        expect(queryAllListItems()[2].name).toMatch(itemA)
+      })
+    })
+
+    describe('dragging B up by one', () => {
+      beforeEach(() => {
+        dragPath(queryListItem(itemB).li, [
+          queryListItem(itemA).li
+        ])
+      })
+
+      test('the order is [B, A, C]', () => {
+        expect(queryAllListItems()[0].name).toMatch(itemB)
+        expect(queryAllListItems()[1].name).toMatch(itemA)
+        expect(queryAllListItems()[2].name).toMatch(itemC)
+      })
+    })
+
+    describe('dragging B down by one', () => {
+      beforeEach(() => {
+        dragPath(queryListItem(itemB).li, [
+          queryListItem(itemC).li
+        ])
+      })
+
+      test('the order is [A, C, B]', () => {
+        expect(queryAllListItems()[0].name).toMatch(itemA)
+        expect(queryAllListItems()[1].name).toMatch(itemC)
+        expect(queryAllListItems()[2].name).toMatch(itemB)
+      })
+    })
+
+    describe('dragging C up by one', () => {
+      beforeEach(() => {
+        dragPath(queryListItem(itemC).li, [
+          queryListItem(itemB).li
+        ])
+      })
+
+      test('the order is [A, C, B]', () => {
+        expect(queryAllListItems()[0].name).toMatch(itemA)
+        expect(queryAllListItems()[1].name).toMatch(itemC)
+        expect(queryAllListItems()[2].name).toMatch(itemB)
+      })
+    })
+
+    describe('dragging C up to the top', () => {
+      beforeEach(() => {
+        dragPath(queryListItem(itemC).li, [
+          queryListItem(itemB).li,
+          queryListItem(itemA).li
+        ])
+      })
+
+      test('the order is [C, A, B]', () => {
+        expect(queryAllListItems()[0].name).toMatch(itemC)
+        expect(queryAllListItems()[1].name).toMatch(itemA)
+        expect(queryAllListItems()[2].name).toMatch(itemB)
+      })
     })
   })
 })
@@ -172,7 +327,7 @@ describe('a list with a complete item and a dismissed item', () => {
 
   describe('when the complete item is dismissed', () => {
     beforeEach(() => {
-      userEvent.click(screen.getByRole('button', { name: /dismiss wash dishes/i }))
+      userEvent.click(getButton(/dismiss wash dishes/i))
     })
 
     test('the complete item is no longer on the list', () => {
@@ -214,6 +369,8 @@ const activeElement = () => { return document.activeElement || document.body }
 const getButtonClear = () => screen.getByRole('button', { name: /clear/i })
 const getButtonAddItem = () => screen.getByRole('button', { name: /add/i })
 const getButtonReset = () => screen.getByRole('button', { name: /reset/i })
+const getButton = name => screen.getByRole('button', { name: name })
+const getCheckbox = name => screen.getByRole('checkbox', { name: name })
 const queryInputNewItem = () => screen.queryByRole('textbox', { name: /new item/i })
 
 const getChildElement = (element, tagName) =>
@@ -227,6 +384,9 @@ const queryListItem = name => {
     return checkbox
   }
 }
+
+const queryAllListItems = () =>
+  screen.getAllByRole('checkbox').map(checkbox => new ListItem(checkbox))
 
 expect.extend({
   toBeComplete (received) {
@@ -284,4 +444,46 @@ class ListItem {
       phase: this.phase
     }
   }
+}
+
+const dragPath = (item, path) => {
+  const destination = path.pop()
+
+  fireDragEvent(item, 'dragstart')
+  for (let i = 0; i < 10; i++) {
+    fireDragEvent(item, 'drag')
+  }
+
+  path.forEach(element => {
+    fireDragEvent(element, 'dragenter')
+    for (let i = 0; i < 10; i++) {
+      fireDragEvent(item, 'drag')
+      fireDragEvent(element, 'dragover')
+    }
+
+    fireDragEvent(element, 'dragleave')
+    for (let i = 0; i < 10; i++) {
+      fireDragEvent(item, 'drag')
+    }
+  })
+
+  if (destination) {
+    fireDragEvent(destination, 'dragenter')
+    for (let i = 0; i < 10; i++) {
+      fireDragEvent(item, 'drag')
+      fireDragEvent(destination, 'dragover')
+    }
+    fireDragEvent(destination, 'drop')
+  }
+
+  fireDragEvent(item, 'dragend')
+}
+
+/* global MouseEvent */
+const fireDragEvent = (item, type) => {
+  fireEvent(item, new MouseEvent(type, {
+    bubbles: true,
+    cancelable: (type !== 'dragend' && type !== 'dragexit' && type !== 'dragleave'),
+    composed: true
+  }))
 }

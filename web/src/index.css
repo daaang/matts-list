@@ -9,3 +9,7 @@
 [aria-hidden=true] {
   display: none;
 }
+
+.item-dragging {
+  opacity: .5;
+}

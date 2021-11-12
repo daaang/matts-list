@@ -5,6 +5,10 @@ class Item
     @li = li
   end
 
+  def ==(other)
+    name == other.name && phase == other.phase
+  end
+
   def name
     li.find("label").text
   end
@@ -46,7 +50,7 @@ module KnowsTheUI
   end
 
   def last_item_mentioned(item = :unset)
-    @last_item_mentioned = item unless item == :unset
+    @last_item_mentioned = item unless item.equal?(:unset)
     @last_item_mentioned
   end
 
@@ -77,17 +81,27 @@ module KnowsTheUI
 
   def move_to_top(item)
     last_item_mentioned(item)
-    pending
+    until find_button("Move up #{item.name}", disabled: :all).disabled?
+      click_button("Move up #{item.name}")
+    end
   end
 
   def move_to_bottom(item)
     last_item_mentioned(item)
-    pending
+    until find_button("Move down #{item.name}", disabled: :all).disabled?
+      click_button("Move down #{item.name}")
+    end
   end
 
   def move_between(item, after: nil, before: nil)
     last_item_mentioned(item)
-    pending
+    raise "impossible" unless list.index(after) < list.index(before)
+    while list.index(item) < list.index(after)
+      click_button("Move down #{item.name}")
+    end
+    while list.index(item) > list.index(before)
+      click_button("Move up #{item.name}")
+    end
   end
 end
 
