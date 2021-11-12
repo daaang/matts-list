@@ -1,90 +1,14 @@
-/* global jest, describe, beforeEach, afterEach, test, expect, document */
+/* global jest, describe, beforeEach, afterEach, test, expect */
 import { render, screen, getByRole } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import List from './List'
-
-const activeElement = () => { return document.activeElement || document.body }
-const getButtonClear = () => screen.getByRole('button', { name: /clear/i })
-const getButtonAddItem = () => screen.getByRole('button', { name: /add/i })
-const getButtonReset = () => screen.getByRole('button', { name: /reset/i })
-const queryInputNewItem = () => screen.queryByRole('textbox', { name: /new item/i })
-
-const getChildElement = (element, tagName) =>
-  Array.from(element.children).find(element => element.tagName === tagName.toUpperCase())
-
-class ListItem {
-  constructor (checkbox) {
-    this.li = checkbox.parentNode
-  }
-
-  get name () {
-    return getChildElement(this.li, 'label').textContent
-  }
-
-  get phase () {
-    if (getByRole(this.li, 'checkbox').checked) {
-      return 'complete'
-    } else if (this.li.classList.contains('item-due')) {
-      return 'due'
-    } else {
-      return 'unknown'
-    }
-  }
-
-  toJSON () {
-    return {
-      name: this.name,
-      phase: this.phase
-    }
-  }
-}
-
-const queryListItem = name => {
-  const checkbox = screen.queryByRole('checkbox', { name: name })
-  if (checkbox) {
-    return new ListItem(checkbox)
-  } else {
-    return checkbox
-  }
-}
-
-const expectListItemPhase = (item, phase) => {
-  if (!item) {
-    return {
-      pass: false,
-      message: () => `expected ${item} to be a list item`
-    }
-  }
-
-  if (item.phase === phase) {
-    return {
-      pass: true,
-      message: () => `expected ${JSON.stringify(item)} not to be ${phase}`
-    }
-  } else {
-    return {
-      pass: false,
-      message: () => `expected ${JSON.stringify(item)} to be ${phase}`
-    }
-  }
-}
-
-expect.extend({
-  toBeComplete (received) {
-    return expectListItemPhase(received, 'complete')
-  },
-
-  toBeDue (received) {
-    return expectListItemPhase(received, 'due')
-  }
-})
 
 describe('a new List', () => {
   beforeEach(() => {
     render(<List />)
   })
 
-  test('renders no text fields for new items', () => {
+  test('renders no text fields for adding new items', () => {
     expect(queryInputNewItem()).toBeNull()
   })
 
@@ -178,7 +102,7 @@ describe('a list with three items', () => {
       expect(queryListItem(/fold clothes/i)).not.toBeDue()
     })
 
-    describe('when the item is uncompleted', () => {
+    describe('when the item is reopened', () => {
       beforeEach(() => {
         userEvent.click(screen.getByRole('checkbox', { name: /fold clothes/i }))
       })
@@ -284,3 +208,80 @@ describe('a list with a complete item and a dismissed item', () => {
     })
   })
 })
+
+/* global document */
+const activeElement = () => { return document.activeElement || document.body }
+const getButtonClear = () => screen.getByRole('button', { name: /clear/i })
+const getButtonAddItem = () => screen.getByRole('button', { name: /add/i })
+const getButtonReset = () => screen.getByRole('button', { name: /reset/i })
+const queryInputNewItem = () => screen.queryByRole('textbox', { name: /new item/i })
+
+const getChildElement = (element, tagName) =>
+  Array.from(element.children).find(element => element.tagName === tagName.toUpperCase())
+
+const queryListItem = name => {
+  const checkbox = screen.queryByRole('checkbox', { name: name })
+  if (checkbox) {
+    return new ListItem(checkbox)
+  } else {
+    return checkbox
+  }
+}
+
+expect.extend({
+  toBeComplete (received) {
+    return expectListItemPhase(received, 'complete')
+  },
+
+  toBeDue (received) {
+    return expectListItemPhase(received, 'due')
+  }
+})
+
+const expectListItemPhase = (item, phase) => {
+  if (!item) {
+    return {
+      pass: false,
+      message: () => `expected ${item} to be a list item`
+    }
+  }
+
+  if (item.phase === phase) {
+    return {
+      pass: true,
+      message: () => `expected ${JSON.stringify(item)} not to be ${phase}`
+    }
+  } else {
+    return {
+      pass: false,
+      message: () => `expected ${JSON.stringify(item)} to be ${phase}`
+    }
+  }
+}
+
+class ListItem {
+  constructor (checkbox) {
+    this.li = checkbox.parentNode
+  }
+
+  get name () {
+    return getChildElement(this.li, 'label').textContent
+  }
+
+  get phase () {
+    if (getByRole(this.li, 'checkbox').checked) {
+      return 'complete'
+    } else if (this.li.classList.contains('item-due')) {
+      return 'due'
+    } else {
+      return 'unknown'
+    }
+  }
+
+  toJSON () {
+    return {
+      name: this.name,
+      phase: this.phase
+    }
+  }
+}
