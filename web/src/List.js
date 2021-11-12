@@ -105,12 +105,13 @@ class List extends React.Component {
             <Item
               key={index}
               id={'item-' + index}
-              name={item.name}
               phase={item.phase}
               dismissed={item.dismissed}
               onChange={phase => this.changePhase(index, phase)}
               onDismiss={() => this.dismissItem(index)}
-            />
+            >
+              {item.name}
+            </Item>
           ))}
         </ol>
         {this.state.newItemForm}
@@ -141,9 +142,9 @@ function Item (props) {
         checked={props.phase === 'complete'}
         onChange={event => props.onChange(event.target.checked ? 'complete' : 'due')}
       />
-      <label htmlFor={props.id}>{props.name}</label>
+      <label htmlFor={props.id}>{props.children}</label>
       <button
-        aria-label={'Dismiss ' + props.name + ' until tomorrow'}
+        aria-label={'Dismiss ' + props.children + ' until tomorrow'}
         title='Dismiss until tomorrow'
         onClick={() => props.onDismiss()}
       >
