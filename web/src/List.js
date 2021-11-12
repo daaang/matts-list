@@ -27,7 +27,11 @@ class List extends React.Component {
   }
 
   componentDidMount () {
-    this.tick()
+    this.tickInterval = setInterval(() => this.tick(), this.state.tickPeriod)
+  }
+
+  componentWillUnmount () {
+    clearInterval(this.tickInterval)
   }
 
   tick () {
@@ -37,7 +41,6 @@ class List extends React.Component {
     }
 
     this.setState({ currentTime: Date.now() })
-    setTimeout(() => this.tick(), this.state.tickPeriod)
   }
 
   performReset () {
