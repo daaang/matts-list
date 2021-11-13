@@ -242,7 +242,6 @@ function Item (props) {
         checked={props.phase === 'complete'}
         onChange={event => props.onChange(event.target.checked ? 'complete' : 'due')}
       />
-      <label htmlFor={props.id}>{props.children}</label>
       <div className='item-buttons'>
         <button
           aria-label={'Move up ' + props.children}
@@ -268,6 +267,7 @@ function Item (props) {
           ×
         </button>
       </div>
+      <label htmlFor={props.id}>{props.children}</label>
     </li>
   )
 }
