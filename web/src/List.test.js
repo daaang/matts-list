@@ -452,6 +452,12 @@ const dragPath = (item, path) => {
   fireDragEvent(item, 'dragstart')
   for (let i = 0; i < 10; i++) {
     fireDragEvent(item, 'drag')
+    fireDragEvent(item, 'dragover')
+  }
+
+  fireDragEvent(item, 'dragleave')
+  for (let i = 0; i < 10; i++) {
+    fireDragEvent(item, 'drag')
   }
 
   path.forEach(element => {
