@@ -1,6 +1,32 @@
 import React from 'react'
 import { nanoid } from 'nanoid'
 
+class AbstractItem {
+  constructor (init) {
+    const obj = (typeof init === 'string')
+      ? { name: init }
+      : init
+
+    this.id = obj.id || nanoid()
+    this.name = obj.name
+    this.phase = obj.phase || 'due'
+    this.dismissed = obj.dismissed || false
+  }
+
+  copyItem (override) {
+    return new AbstractItem({
+      id: this.id,
+      name: this.name,
+      phase: (typeof override.phase === 'undefined')
+        ? this.phase
+        : override.phase,
+      dismissed: (typeof override.dismissed === 'undefined')
+        ? this.dismissed
+        : override.dismissed
+    })
+  }
+}
+
 class List extends React.Component {
   constructor (props) {
     super(props)
@@ -17,22 +43,7 @@ class List extends React.Component {
       currentTime: Date.now(),
       nextReset: resetTime,
       tickPeriod: this.props.tickPeriod || 5000,
-      items: initItems.map(i => {
-        if (typeof i === 'string') {
-          return {
-            id: nanoid(),
-            name: i,
-            phase: 'due'
-          }
-        } else {
-          return {
-            id: nanoid(),
-            name: i.name,
-            phase: i.phase,
-            dismissed: i.dismissed
-          }
-        }
-      })
+      items: initItems.map(item => { return new AbstractItem(item) })
     }
   }
 
@@ -55,9 +66,9 @@ class List extends React.Component {
 
   performReset () {
     this.setState({
-      items: this.state.items.filter(i => i.phase === 'due').map(i => {
-        return { id: i.id, name: i.name, phase: i.phase }
-      })
+      items: this.state.items
+        .filter(item => item.phase === 'due')
+        .map(item => item.copyItem({ dismissed: false }))
     })
   }
 
@@ -66,23 +77,19 @@ class List extends React.Component {
       newItemForm: (
         <AutoFocusTextForm
           labelText='New item'
-          onSubmit={item => this.doneAddingItem(item)}
+          onSubmit={itemName => this.doneAddingItem(itemName)}
         />
       )
     })
   }
 
-  doneAddingItem (value) {
+  doneAddingItem (itemName) {
     this.setState({ newItemForm: '' })
-    if (value) {
+
+    if (itemName) {
       const items = this.state.items.slice()
-      this.setState({
-        items: items.concat([{
-          id: nanoid(),
-          name: value,
-          phase: 'due'
-        }])
-      })
+      items.push(new AbstractItem(itemName))
+      this.setState({ items: items })
     }
   }
 
@@ -93,11 +100,7 @@ class List extends React.Component {
   changePhase (itemIndex, itemPhase) {
     const before = this.state.items.slice(0, itemIndex)
     const after = this.state.items.slice(itemIndex + 1)
-    const item = {
-      id: this.state.items[itemIndex].id,
-      name: this.state.items[itemIndex].name,
-      phase: itemPhase
-    }
+    const item = this.state.items[itemIndex].copyItem({ phase: itemPhase })
 
     this.setState({ items: before.concat([item]).concat(after) })
   }
@@ -105,12 +108,7 @@ class List extends React.Component {
   dismissItem (itemIndex) {
     const before = this.state.items.slice(0, itemIndex)
     const after = this.state.items.slice(itemIndex + 1)
-    const item = {
-      id: this.state.items[itemIndex].id,
-      name: this.state.items[itemIndex].name,
-      phase: this.state.items[itemIndex].phase,
-      dismissed: true
-    }
+    const item = this.state.items[itemIndex].copyItem({ dismissed: true })
 
     this.setState({ items: before.concat([item]).concat(after) })
   }
@@ -180,7 +178,7 @@ class List extends React.Component {
         <ol>
           {this.state.items.map((item, index) => {
             return (
-              <Item
+              <ListItem
                 key={item.id}
                 id={'item-' + index}
                 phase={item.phase}
@@ -196,7 +194,7 @@ class List extends React.Component {
                 onDragEnd={event => this.stopDraggingItem(index, event)}
               >
                 {item.name}
-              </Item>
+              </ListItem>
             )
           })}
         </ol>
@@ -211,7 +209,7 @@ class List extends React.Component {
   }
 }
 
-function Item (props) {
+function ListItem (props) {
   const classNames = []
 
   if (props.isDragging) classNames.push('item-dragging')
