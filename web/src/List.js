@@ -1,67 +1,20 @@
 import React from 'react'
 import { nanoid } from 'nanoid'
 
-class AbstractItem {
-  constructor (init) {
-    const obj = (typeof init === 'string')
-      ? { name: init }
-      : init
-
-    this.id = obj.id || nanoid()
-    this.name = obj.name
-    this.phase = obj.phase || 'due'
-    this.dismissed = obj.dismissed || false
-  }
-
-  copyItem (override) {
-    return new AbstractItem({
-      id: this.id,
-      name: this.name,
-      phase: (typeof override.phase === 'undefined')
-        ? this.phase
-        : override.phase,
-      dismissed: (typeof override.dismissed === 'undefined')
-        ? this.dismissed
-        : override.dismissed
-    })
-  }
-}
-
 class List extends React.Component {
   constructor (props) {
     super(props)
-    const initItems = props.initItems || []
-    const today = new Date()
-    const resetTime = Date.UTC(
-      today.getFullYear(),
-      today.getMonth(),
-      today.getDate()
-    ) + (24 * 60 * 60 * 1000)
 
     this.state = {
       newItemForm: '',
-      currentTime: Date.now(),
-      nextReset: resetTime,
-      tickPeriod: this.props.tickPeriod || 5000,
-      items: initItems.map(item => { return new AbstractItem(item) })
+      items: (props.initItems)
+        ? props.initItems.map(item => { return new AbstractItem(item) })
+        : []
     }
   }
 
-  componentDidMount () {
-    this.tickInterval = setInterval(() => this.tick(), this.state.tickPeriod)
-  }
-
-  componentWillUnmount () {
-    clearInterval(this.tickInterval)
-  }
-
-  tick () {
-    if (this.state.nextReset < Date.now()) {
-      this.setState({ nextReset: this.state.nextReset + (24 * 60 * 60 * 1000) })
-      this.performReset()
-    }
-
-    this.setState({ currentTime: Date.now() })
+  clearList () {
+    this.setState({ items: [] })
   }
 
   performReset () {
@@ -93,44 +46,20 @@ class List extends React.Component {
     }
   }
 
-  clearList () {
-    this.setState({ items: [] })
-  }
-
-  changePhase (itemIndex, itemPhase) {
+  changeItem (itemIndex, override) {
     const before = this.state.items.slice(0, itemIndex)
     const after = this.state.items.slice(itemIndex + 1)
-    const item = this.state.items[itemIndex].copyItem({ phase: itemPhase })
 
-    this.setState({ items: before.concat([item]).concat(after) })
-  }
-
-  dismissItem (itemIndex) {
-    const before = this.state.items.slice(0, itemIndex)
-    const after = this.state.items.slice(itemIndex + 1)
-    const item = this.state.items[itemIndex].copyItem({ dismissed: true })
-
-    this.setState({ items: before.concat([item]).concat(after) })
+    before.push(this.state.items[itemIndex].copyItem(override))
+    this.setState({ items: before.concat(after) })
   }
 
   moveUpItem (itemIndex) {
-    const before = this.state.items.slice(0, itemIndex)
-    const after = this.state.items.slice(itemIndex + 1)
-    const item = this.state.items[itemIndex]
-
-    after.unshift(before.pop())
-    before.push(item)
-    this.setState({ items: before.concat(after) })
+    this.setState({ items: this.moveItem(itemIndex, itemIndex - 1) })
   }
 
   moveDownItem (itemIndex) {
-    const before = this.state.items.slice(0, itemIndex)
-    const after = this.state.items.slice(itemIndex + 1)
-    const item = this.state.items[itemIndex]
-
-    before.push(after.shift())
-    before.push(item)
-    this.setState({ items: before.concat(after) })
+    this.setState({ items: this.moveItem(itemIndex, itemIndex + 1) })
   }
 
   itemPosition (itemIndex) {
@@ -145,36 +74,44 @@ class List extends React.Component {
   }
 
   dragOverItem (itemIndex, event) {
-    if (itemIndex < this.state.draggingItem) {
-      const before = this.state.items.slice(0, itemIndex)
-      const after = this.state.items.slice(itemIndex, this.state.draggingItem)
-      const last = this.state.items.slice(this.state.draggingItem + 1)
-
-      before.push(this.state.items[this.state.draggingItem])
-      this.setState({
-        items: before.concat(after).concat(last),
-        draggingItem: itemIndex
-      })
-    } else {
-      const first = this.state.items.slice(0, this.state.draggingItem)
-      const before = this.state.items.slice(this.state.draggingItem + 1, itemIndex + 1)
-      const after = this.state.items.slice(itemIndex + 1)
-
-      before.push(this.state.items[this.state.draggingItem])
-      this.setState({
-        items: first.concat(before).concat(after),
-        draggingItem: itemIndex
-      })
-    }
+    this.setState({
+      items: this.moveItem(this.state.draggingItem, itemIndex),
+      draggingItem: itemIndex
+    })
   }
 
   stopDraggingItem (itemIndex, event) {
     this.setState({ draggingItem: undefined })
   }
 
+  moveItem (itemIndex, desiredIndex) {
+    return this.reorderItems(itemIndex, desiredIndex, middle => {
+      if (itemIndex < desiredIndex) {
+        middle.push(middle.shift())
+      } else {
+        middle.unshift(middle.pop())
+      }
+      return middle
+    })
+  }
+
+  reorderItems (index1, index2, cb) {
+    const [min, max] = [index1, index2].sort()
+
+    const before = this.state.items.slice(0, min)
+    const middle = this.state.items.slice(min, max + 1)
+    const after = this.state.items.slice(max + 1)
+
+    return before.concat(cb(middle)).concat(after)
+  }
+
   render () {
     return (
       <>
+        <DailyReset
+          performReset={() => this.performReset()}
+          tickPeriod={this.props.tickPeriod || 5000}
+        />
         <ol>
           {this.state.items.map((item, index) => {
             return (
@@ -185,8 +122,8 @@ class List extends React.Component {
                 dismissed={item.dismissed}
                 position={this.itemPosition(index)}
                 isDragging={index === this.state.draggingItem}
-                onChange={phase => this.changePhase(index, phase)}
-                onDismiss={() => this.dismissItem(index)}
+                onChange={phase => this.changeItem(index, { phase: phase })}
+                onDismiss={() => this.changeItem(index, { dismissed: true })}
                 onMoveUp={() => this.moveUpItem(index)}
                 onMoveDown={() => this.moveDownItem(index)}
                 onDragStart={event => this.startDraggingItem(index, event)}
@@ -270,6 +207,52 @@ function ListItem (props) {
   )
 }
 
+class DailyReset extends React.Component {
+  constructor (props) {
+    super(props)
+
+    this.state = { nextReset: this.getUpcomingMidnight() }
+  }
+
+  componentDidMount () {
+    this.tickInterval = setInterval(() => this.tick(), this.props.tickPeriod)
+  }
+
+  componentWillUnmount () {
+    clearInterval(this.tickInterval)
+  }
+
+  render () {
+    return null
+  }
+
+  getUpcomingMidnight () {
+    const today = new Date()
+    return Date.UTC(
+      today.getFullYear(),
+      today.getMonth(),
+      today.getDate()
+    ) + (24 * 60 * 60 * 1000)
+  }
+
+  tick () {
+    if (this.isTimeToReset()) {
+      this.setState({ nextReset: this.resetAfterNext() })
+      this.props.performReset()
+    }
+
+    this.setState({ currentTime: Date.now() })
+  }
+
+  isTimeToReset () {
+    return this.state.nextReset < Date.now()
+  }
+
+  resetAfterNext () {
+    return this.state.nextReset + (24 * 60 * 60 * 1000)
+  }
+}
+
 class AutoFocusTextForm extends React.Component {
   constructor (props) {
     super(props)
@@ -293,6 +276,32 @@ class AutoFocusTextForm extends React.Component {
         <input type='submit' value='Done' />
       </form>
     )
+  }
+}
+
+class AbstractItem {
+  constructor (init) {
+    const obj = (typeof init === 'string')
+      ? { name: init }
+      : init
+
+    this.id = obj.id || nanoid()
+    this.name = obj.name
+    this.phase = obj.phase || 'due'
+    this.dismissed = obj.dismissed || false
+  }
+
+  copyItem (override) {
+    return new AbstractItem({
+      id: this.id,
+      name: this.name,
+      phase: (typeof override.phase === 'undefined')
+        ? this.phase
+        : override.phase,
+      dismissed: (typeof override.dismissed === 'undefined')
+        ? this.dismissed
+        : override.dismissed
+    })
   }
 }
 
