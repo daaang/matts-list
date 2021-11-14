@@ -5,13 +5,16 @@ import List from './List'
 
 describe('a list with no attributes set', () => {
   test('maintains state between renders', () => {
-    render(<List />)
+    const { unmount } = render(<List />)
     userEvent.click(getButtonAddItem())
     userEvent.type(activeElement(), 'wash dishes{enter}')
     expect(queryListItem(/wash dishes/i)).toBeDue()
 
+    unmount()
     render(<List />)
     expect(queryListItem(/wash dishes/i)).toBeDue()
+    userEvent.click(getButton(/dismiss wash dishes/i))
+    expect(queryListItem(/wash dishes/i)).toBeNull()
   })
 })
 

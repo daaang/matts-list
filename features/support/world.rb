@@ -10,15 +10,27 @@ class Item
   end
 
   def name
-    li.find("label").text
+    unless obsolete?
+      @name = li.find("label").text
+    end
+
+    @name
   end
 
   def phase
-    if li.find("input[type=checkbox]").checked?
-      :complete
-    elsif li[:class] == "item-due"
-      :due
+    unless obsolete?
+      @phase = if li.find("input[type=checkbox]").checked?
+        :complete
+      elsif li[:class] == "item-due"
+        :due
+      end
     end
+
+    @phase
+  end
+
+  def obsolete?
+    li.inspect.start_with? "Obsolete"
   end
 
   def inspect
@@ -110,7 +122,9 @@ module KnowsTheUI
   end
 
   def reload_the_page
+    name = last_item_mentioned.name
     visit("/")
+    get_item_by_name(name)
   end
 
   def log_in

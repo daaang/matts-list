@@ -8,6 +8,7 @@ Feature: Progressive Web Application
     Given my task list has a few items due
     When I leave and come back
     Then my list is still there
+    And I can interact with my list
 
   Scenario: Hide the list on log out
     Given I am logged in
