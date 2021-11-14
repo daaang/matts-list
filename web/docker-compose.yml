@@ -1,19 +1,6 @@
 version: "3.3"
 services:
-  build:
-    build:
-      context: .
-      dockerfile: Dockerfile.build
-    volumes:
-    - "./build:/build"
-
   test:
     build:
       context: .
-      dockerfile: Dockerfile.build
-    environment:
-      CI: "true"
-    command:
-    - "bash"
-    - "-c"
-    - "npx standard && yarn test --verbose --coverage"
+      dockerfile: Dockerfile.test

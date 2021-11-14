@@ -6,16 +6,8 @@ FROM node:16.13.0 as builder
 
 WORKDIR /usr/src/app
 COPY package.json yarn.lock ./
-RUN apt-get update \
-      && apt-get install imagemagick \
-      && yarn install
+RUN apt-get update && yarn install
 COPY ./public public/
-RUN convert -resize x192 public/logo512.png public/logo192.png \
-      && convert -resize x64 public/logo512.png /tmp/logo64.ico \
-      && convert -resize x32 /tmp/logo64.ico /tmp/logo32.ico \
-      && convert -resize x24 /tmp/logo64.ico /tmp/logo24.ico \
-      && convert -resize x16 /tmp/logo32.ico /tmp/logo16.ico \
-      && convert /tmp/logo??.ico public/favicon.ico
 COPY ./src src/
 
 RUN npx standard

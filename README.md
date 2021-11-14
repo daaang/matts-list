@@ -6,17 +6,40 @@ I'm Matt and this is my to do list.
 Make commands
 -------------
 
-All the make commands rely on docker-compose, so you'll need that and
-docker installed and working in order to use them.
+-   `make` runs all tests: linters, unit tests, and end-to-end
+    acceptance tests.
+-   `make test` runs all linters and unit tests.
+-   `make features` runs the end-to-end acceptance tests.
+-   `make serve` runs a production build in a container listening
+    at <http://localhost:8080>.
 
-You can run `make build` to build the static site in the `build`
-directory, and you can clean it up with `make clean`.
+### Dependencies
 
-You can also run tests with `make features` for acceptance tests and
-`make test` for unit tests.
+-   [Docker][1] (with docker-compose) is all you need to run all
+    the tests.
 
-To build the static site and run it inside a container, you can run
-`make serve`.
+[1]: https://www.docker.com/products/docker-desktop
+
+That said, if you're planning on doing local development work, you'll
+probably want to be running nodejs locally. It's the difference between
+taking a couple seconds versus a couple minutes to run unit tests. See
+[the dependencies for web development][2].
+
+[2]: web/
+
+Layout
+------
+
+-   **docs/adr/** holds records for decisions I've made, documenting
+    my reasoning.
+-   **features/** contains acceptance tests, implemented in ruby
+    and cucumber:
+    -   The tests themselves are `.feature` files in the base directory.
+    -   In addition to a couple `.rb` files, the **features/support/**
+        directory contains the Gemfiles and Dockerfile for actually
+        running the acceptance tests.
+-   **web/** is the single-page web application, implemented in
+    javascript and react. It has [its own README][2].
 
 Glossary
 --------
