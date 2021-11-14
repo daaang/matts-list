@@ -25,13 +25,15 @@ probably want to be running nodejs locally. It's the difference between
 taking a couple seconds versus a couple minutes to run unit tests. See
 [the dependencies for web development][2].
 
-[2]: web/
+[2]: web#dependencies
 
 Layout
 ------
 
--   **docs/adr/** holds records for decisions I've made, documenting
-    my reasoning.
+-   **docs/**:
+    -   **docs/adr/** holds records for decisions I've made, documenting
+        my reasoning.
+    -   **docs/matts-list.com/** is a static html/css website.
 -   **features/** contains acceptance tests, implemented in ruby
     and cucumber:
     -   The tests themselves are `.feature` files in the base directory.
@@ -40,6 +42,8 @@ Layout
         running the acceptance tests.
 -   **web/** is the single-page web application, implemented in
     javascript and react. It has [its own README][2].
+
+[3]: web#readme
 
 Glossary
 --------

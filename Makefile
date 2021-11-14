@@ -1,5 +1,5 @@
 dc = docker-compose --file features/support/docker-compose.yml --project-directory .
-.PHONY: all clean test features serve containers teardown
+.PHONY: all clean test features serve docsite containers teardown
 
 # Default action is running all unit and acceptance tests
 all: test features
@@ -26,9 +26,13 @@ features: containers
 
 # Run a production deployment locally with docker-compose
 serve: containers
-	@echo "[32mView at http://localhost:8080/ [0m(^C to stop)"
+	@echo "[32mView at http://localhost:8080/ [0m(docsite at 8081, ^C to stop)"
 	-$(dc) run --service-ports web
 	$(dc) down
+
+docsite:
+	rm docs/matts-list.com/Dockerfile
+	cp web/public/favicon.ico docs/matts-list.com/
 
 containers:
 	$(dc) build --quiet --parallel
