@@ -54,14 +54,6 @@ class List extends React.Component {
     this.setState({ items: before.concat(after) })
   }
 
-  moveUpItem (itemIndex) {
-    this.setState({ items: this.moveItem(itemIndex, itemIndex - 1) })
-  }
-
-  moveDownItem (itemIndex) {
-    this.setState({ items: this.moveItem(itemIndex, itemIndex + 1) })
-  }
-
   itemPosition (itemIndex) {
     if (this.state.items.length === 1) return 'only'
     else if (itemIndex === 0) return 'top'
@@ -69,40 +61,39 @@ class List extends React.Component {
     else return 'middle'
   }
 
-  startDraggingItem (itemIndex, event) {
+  startDraggingItem (itemIndex) {
     this.setState({ draggingItem: itemIndex })
   }
 
-  dragOverItem (itemIndex, event) {
+  stopDraggingItem (itemIndex) {
+    this.setState({ draggingItem: undefined })
+  }
+
+  dragOverItem (itemIndex) {
     this.setState({
-      items: this.moveItem(this.state.draggingItem, itemIndex),
+      items: this.reorderItems(this.state.draggingItem, itemIndex),
       draggingItem: itemIndex
     })
   }
 
-  stopDraggingItem (itemIndex, event) {
-    this.setState({ draggingItem: undefined })
-  }
-
   moveItem (itemIndex, desiredIndex) {
-    return this.reorderItems(itemIndex, desiredIndex, middle => {
-      if (itemIndex < desiredIndex) {
-        middle.push(middle.shift())
-      } else {
-        middle.unshift(middle.pop())
-      }
-      return middle
-    })
+    this.setState({ items: this.reorderItems(itemIndex, desiredIndex) })
   }
 
-  reorderItems (index1, index2, cb) {
-    const [min, max] = [index1, index2].sort()
+  reorderItems (itemIndex, desiredIndex) {
+    const [min, max] = [itemIndex, desiredIndex].sort()
 
     const before = this.state.items.slice(0, min)
     const middle = this.state.items.slice(min, max + 1)
     const after = this.state.items.slice(max + 1)
 
-    return before.concat(cb(middle)).concat(after)
+    if (itemIndex < desiredIndex) {
+      middle.push(middle.shift())
+    } else {
+      middle.unshift(middle.pop())
+    }
+
+    return before.concat(middle).concat(after)
   }
 
   render () {
@@ -113,27 +104,21 @@ class List extends React.Component {
           tickPeriod={this.props.tickPeriod || 5000}
         />
         <ol>
-          {this.state.items.map((item, index) => {
-            return (
-              <ListItem
-                key={item.id}
-                id={'item-' + index}
-                phase={item.phase}
-                dismissed={item.dismissed}
-                position={this.itemPosition(index)}
-                isDragging={index === this.state.draggingItem}
-                onChange={phase => this.changeItem(index, { phase: phase })}
-                onDismiss={() => this.changeItem(index, { dismissed: true })}
-                onMoveUp={() => this.moveUpItem(index)}
-                onMoveDown={() => this.moveDownItem(index)}
-                onDragStart={event => this.startDraggingItem(index, event)}
-                onDragEnter={event => this.dragOverItem(index, event)}
-                onDragEnd={event => this.stopDraggingItem(index, event)}
-              >
-                {item.name}
-              </ListItem>
-            )
-          })}
+          {this.state.items.map((item, index) => (
+            <ListItem
+              key={item.id}
+              item={item}
+              position={this.itemPosition(index)}
+              isDragging={index === this.state.draggingItem}
+              onChange={phase => this.changeItem(index, { phase: phase })}
+              onDismiss={() => this.changeItem(index, { dismissed: true })}
+              onMoveUp={() => this.moveItem(index, index - 1)}
+              onMoveDown={() => this.moveItem(index, index + 1)}
+              onDragStart={() => this.startDraggingItem(index)}
+              onDragEnter={() => this.dragOverItem(index)}
+              onDragEnd={() => this.stopDraggingItem(index)}
+            />
+          ))}
         </ol>
         {this.state.newItemForm}
         <button type='button' onClick={() => this.startAddingItem()}>Add item</button>
@@ -154,55 +139,60 @@ function ListItem (props) {
     ? event => { event.preventDefault() }
     : () => null
 
-  if (props.phase === 'complete') {
+  if (props.item.phase === 'complete') {
     classNames.push('item-complete')
   } else {
     classNames.push('item-due')
   }
 
+  const buttons = [{
+    glyph: '↑',
+    label: 'Move up %s',
+    disabled: props.position === 'top' || props.position === 'only',
+    fn: props.onMoveUp
+  }, {
+    glyph: '↓',
+    label: 'Move down %s',
+    disabled: props.position === 'bottom' || props.position === 'only',
+    fn: props.onMoveDown
+  }, {
+    glyph: '×',
+    label: 'Dismiss %s until tomorrow',
+    disabled: false,
+    fn: props.onDismiss
+  }]
+
   return (
     <li
       className={classNames.join(' ')}
-      aria-hidden={props.dismissed}
+      aria-hidden={props.item.dismissed}
       draggable='true'
-      onDragStart={event => props.onDragStart(event)}
-      onDragEnter={event => props.onDragEnter(event)}
-      onDragEnd={event => props.onDragEnd(event)}
+      onDragStart={() => props.onDragStart()}
+      onDragEnter={() => props.onDragEnter()}
+      onDragEnd={() => props.onDragEnd()}
       onDragOver={onDragOver}
       onDrop={() => null}
     >
       <input
-        id={props.id}
+        id={props.item.id}
         type='checkbox'
-        checked={props.phase === 'complete'}
+        checked={props.item.phase === 'complete'}
         onChange={event => props.onChange(event.target.checked ? 'complete' : 'due')}
       />
       <div className='item-buttons'>
-        <button
-          aria-label={'Move up ' + props.children}
-          title='Move up'
-          disabled={props.position === 'top' || props.position === 'only'}
-          onClick={() => props.onMoveUp()}
-        >
-          ↑
-        </button>
-        <button
-          aria-label={'Move down ' + props.children}
-          title='Move down'
-          disabled={props.position === 'bottom' || props.position === 'only'}
-          onClick={() => props.onMoveDown()}
-        >
-          ↓
-        </button>
-        <button
-          aria-label={'Dismiss ' + props.children + ' until tomorrow'}
-          title='Dismiss until tomorrow'
-          onClick={() => props.onDismiss()}
-        >
-          ×
-        </button>
+        {buttons.map(button => (
+          <button
+            key={button.label.replace(' %s', '')}
+            title={button.label.replace(' %s', '')}
+            aria-label={button.label.replace('%s', props.item.name)}
+            disabled={button.disabled}
+            onClick={() => button.fn()}
+          >
+            {button.glyph}
+          </button>
+        ))}
       </div>
-      <label htmlFor={props.id}>{props.children}</label>
+      <label htmlFor={props.item.id}>{props.item.name}</label>
     </li>
   )
 }
