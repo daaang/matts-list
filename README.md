@@ -1,7 +1,9 @@
 Matt's List
 ===========
 
-I'm Matt and this is my to do list.
+I'm Matt and this is my to do list. The latest deployment of the
+application is at <https://matts-list.app>, and there's a companion
+website at <https://matts-list.com>.
 
 Make commands
 -------------

@@ -11,7 +11,7 @@ Accepted
 The main thing that I want to build is an iphone app, because that is
 the phone that I have. But I don't have a mac, which is what you need to
 have to develop one that goes in the app store, so my only option is a
-persistent web application (PWA).
+progressive web application (PWA).
 
 According to [this article][1], developing PWAs on iOS is apparently
 "great," and [Mozilla has a page about them][2], so I guess I have

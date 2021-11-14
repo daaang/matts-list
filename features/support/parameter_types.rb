@@ -22,3 +22,19 @@ ParameterType(
   type: String,
   transformer: ->(s) { s.to_s }
 )
+
+ParameterType(
+  name: "is_logged_in",
+  regexp: /( when I'm logged (in|out))?/,
+  type: Symbol,
+  transformer: lambda do |s|
+    case s
+    when " when I'm logged in"
+      :login
+    when " when I'm logged out"
+      :logout
+    else
+      :none
+    end
+  end
+)

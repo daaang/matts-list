@@ -3,9 +3,21 @@ import { render, screen, getByRole, fireEvent } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import List from './List'
 
+describe('a list with no attributes set', () => {
+  test('maintains state between renders', () => {
+    render(<List />)
+    userEvent.click(getButtonAddItem())
+    userEvent.type(activeElement(), 'wash dishes{enter}')
+    expect(queryListItem(/wash dishes/i)).toBeDue()
+
+    render(<List />)
+    expect(queryListItem(/wash dishes/i)).toBeDue()
+  })
+})
+
 describe('a new List', () => {
   beforeEach(() => {
-    render(<List />)
+    render(<List initItems={[]} />)
   })
 
   test('renders no text fields for adding new items', () => {
