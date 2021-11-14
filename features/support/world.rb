@@ -103,6 +103,23 @@ module KnowsTheUI
       click_button("Move up #{item.name}")
     end
   end
+
+  def remember_the_list(list_of_names = :unset)
+    @remember_the_list = list_of_names unless list_of_names.equal?(:unset)
+    @remember_the_list
+  end
+
+  def reload_the_page
+    visit("/")
+  end
+
+  def log_in
+    pending
+  end
+
+  def log_out
+    pending
+  end
 end
 
 World(KnowsTheUI)

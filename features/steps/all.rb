@@ -91,3 +91,55 @@ end
 Then("I can see that the new order is {item_order}") do |order|
   expect_order(order)
 end
+
+Given("my task list has a few items due{is_logged_in}") do |action|
+  case action
+  when :login
+    log_in
+  when :logout
+    log_out
+  end
+
+  get_an_empty_task_list
+  my_list = [
+    "pay medical bills",
+    "look at pictures of owls",
+    "have a nap"
+  ]
+
+  my_list.each { |name| add_item(name) }
+  remember_the_list(my_list)
+end
+
+When("I leave and come back") do
+  reload_the_page
+end
+
+Then("my list is still there") do
+  expect(list.map { |item| item.name }).to eq remember_the_list
+end
+
+Then("I can see my list again") do
+  expect(list.map { |item| item.name }).to eq remember_the_list
+end
+
+Given("I am logged in") do
+  log_in
+end
+
+When("I log in") do
+  log_in
+end
+
+When("I log out") do
+  log_out
+end
+
+Then("my list is gone") do
+  expect(list.length).to eq 0
+end
+
+Given("I am logged out and can't see my list") do
+  log_out
+  expect(list.length).to eq 0
+end

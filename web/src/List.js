@@ -9,8 +9,16 @@ class List extends React.Component {
       newItemForm: '',
       items: (props.initItems)
         ? props.initItems.map(item => { return new AbstractItem(item) })
-        : []
+        : JSON.parse(window.localStorage.getItem('items')) || []
     }
+  }
+
+  setState (state) {
+    if (typeof state.items !== 'undefined') {
+      window.localStorage.setItem('items', JSON.stringify(state.items))
+    }
+
+    super.setState(state)
   }
 
   clearList () {

@@ -28,3 +28,11 @@ updates:
     directory: "/web"
     schedule:
       interval: "daily"
+
+  # There's another static website, but it's just regular html/css, so
+  # the only file to watch for versions is the Dockerfile, which is for
+  # testing purposes only.
+  - package-ecosystem: "docker"
+    directory: "/docs/matts-list.com"
+    schedule:
+      interval: "daily"
