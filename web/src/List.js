@@ -5,11 +5,17 @@ class List extends React.Component {
   constructor (props) {
     super(props)
 
+    const initItems = () => {
+      if (props.initItems) return props.initItems
+
+      const localItems = JSON.parse(window.localStorage.getItem('items'))
+      if (localItems) return localItems
+      return []
+    }
+
     this.state = {
       newItemForm: '',
-      items: (props.initItems)
-        ? props.initItems.map(item => { return new AbstractItem(item) })
-        : JSON.parse(window.localStorage.getItem('items')) || []
+      items: initItems().map(item => { return new AbstractItem(item) })
     }
   }
 

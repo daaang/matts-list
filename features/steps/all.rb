@@ -123,6 +123,12 @@ Then("I can see my list again") do
   expect(list.map { |item| item.name }).to eq remember_the_list
 end
 
+Then("I can interact with my list") do
+  expect(last_item_mentioned.phase).to be :due
+  complete_the_item!
+  expect(last_item_mentioned.phase).to be :complete
+end
+
 Given("I am logged in") do
   log_in
 end
