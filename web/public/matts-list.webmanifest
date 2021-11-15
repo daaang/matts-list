@@ -1,6 +1,7 @@
 {
   "short_name": "Matt's List",
-  "name": "Matt's To Do List",
+  "name": "Matt's List",
+  "description": "A to-do list made by Matt, for Matt, of Matt",
   "icons": [
     {
       "src": "favicon.ico",
