@@ -1,3 +1,6 @@
+require "erb"
+require "json"
+
 class Item
   attr_reader :li
 
@@ -44,7 +47,7 @@ module KnowsTheUI
   end
 
   def get_an_empty_task_list
-    visit("/")
+    be_on_page
     click_button("Clear list")
   end
 
@@ -56,9 +59,18 @@ module KnowsTheUI
   end
 
   def get_item_by_name(name)
+    try_and_get_item_by_name(name)
+    expect(last_item_mentioned).not_to be_nil
+    last_item_mentioned
+  end
+
+  def try_and_get_item_by_name(name)
     items = list.select { |item| item.name == name }
-    expect(items.length).to eq(1)
-    last_item_mentioned(items[0])
+    if items.length == 1
+      last_item_mentioned(items[0])
+    else
+      last_item_mentioned(nil)
+    end
   end
 
   def last_item_mentioned(item = :unset)
@@ -121,18 +133,42 @@ module KnowsTheUI
     @remember_the_list
   end
 
-  def reload_the_page
-    name = last_item_mentioned.name
-    visit("/")
-    get_item_by_name(name)
-  end
-
   def log_in
-    pending
+    fakeuser = ERB::Util.url_encode(JSON.dump(
+      id: "fake-uuid",
+      name: "Chuck Finley",
+      email: "chuck@hotmail.com"
+    ))
+    be_on_page("/?fakeuser=#{fakeuser}")
   end
 
   def log_out
-    pending
+    be_on_page("/")
+  end
+
+  def reload_the_page
+    if last_item_mentioned
+      name = last_item_mentioned.name
+      refresh
+      try_and_get_item_by_name(name)
+    else
+      refresh
+    end
+  end
+
+  def be_on_page(path = :unset)
+    path = @current_path || "/" if path.equal? :unset
+
+    if @current_path != path
+      @current_path = path
+      if last_item_mentioned
+        name = last_item_mentioned.name
+        visit(path)
+        try_and_get_item_by_name(name)
+      else
+        visit(path)
+      end
+    end
   end
 end
 

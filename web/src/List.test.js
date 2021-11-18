@@ -3,18 +3,65 @@ import { render, screen, getByRole, fireEvent } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import List from './List'
 
-describe('a list with no attributes set', () => {
-  test('maintains state between renders', () => {
-    const { unmount } = render(<List />)
+describe('multiple renderings', () => {
+  const world = {}
+  world.render = x => { world.unmount = render(x).unmount }
+  world.addItem = name => {
     userEvent.click(getButtonAddItem())
-    userEvent.type(activeElement(), 'wash dishes{enter}')
+    userEvent.type(activeElement(), name + '{enter}')
+  }
+
+  world.users = [{
+    id: '1',
+    name: 'user 1',
+    email: 'user1@xyz.net'
+  }, {
+    id: '2',
+    name: 'user 2',
+    email: 'user2@xyz.net'
+  }]
+
+  test('maintains state between renders', () => {
+    world.render(<List />)
+    world.addItem('wash dishes')
     expect(queryListItem(/wash dishes/i)).toBeDue()
 
-    unmount()
-    render(<List />)
+    world.unmount()
+    world.render(<List />)
     expect(queryListItem(/wash dishes/i)).toBeDue()
     userEvent.click(getButton(/dismiss wash dishes/i))
     expect(queryListItem(/wash dishes/i)).toBeNull()
+  })
+
+  test('maintains different lists for different users', () => {
+    world.render(<List />)
+    world.addItem('wash dishes')
+
+    world.unmount()
+    world.render(<List user={world.users[0]} />)
+    world.addItem('wipe counter')
+
+    world.unmount()
+    world.render(<List user={world.users[1]} />)
+    world.addItem('polish doorknobs')
+
+    world.unmount()
+    world.render(<List />)
+    expect(queryListItem(/wash dishes/i)).toBeDue()
+    expect(queryListItem(/wipe counter/i)).toBeNull()
+    expect(queryListItem(/polish doorknobs/i)).toBeNull()
+
+    world.unmount()
+    world.render(<List user={world.users[0]} />)
+    expect(queryListItem(/wash dishes/i)).toBeNull()
+    expect(queryListItem(/wipe counter/i)).toBeDue()
+    expect(queryListItem(/polish doorknobs/i)).toBeNull()
+
+    world.unmount()
+    world.render(<List user={world.users[1]} />)
+    expect(queryListItem(/wash dishes/i)).toBeNull()
+    expect(queryListItem(/wipe counter/i)).toBeNull()
+    expect(queryListItem(/polish doorknobs/i)).toBeDue()
   })
 })
 
