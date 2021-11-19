@@ -4,6 +4,7 @@ version: 2
 updates:
   - package-ecosystem: "github-actions"
     directory: "/"
+    open-pull-requests-limit: 1
     schedule:
       interval: "daily"
 
@@ -11,10 +12,12 @@ updates:
   # a Gemfile.
   - package-ecosystem: "docker"
     directory: "/features/support"
+    open-pull-requests-limit: 1
     schedule:
       interval: "daily"
   - package-ecosystem: "bundler"
     directory: "/features/support"
+    open-pull-requests-limit: 1
     schedule:
       interval: "daily"
 
@@ -22,10 +25,12 @@ updates:
   # as well as package.json and yarn.lock.
   - package-ecosystem: "docker"
     directory: "/web"
+    open-pull-requests-limit: 1
     schedule:
       interval: "daily"
   - package-ecosystem: "npm"
     directory: "/web"
+    open-pull-requests-limit: 1
     schedule:
       interval: "daily"
 
@@ -34,5 +39,6 @@ updates:
   # testing purposes only.
   - package-ecosystem: "docker"
     directory: "/docs/matts-list.com"
+    open-pull-requests-limit: 1
     schedule:
       interval: "daily"
