@@ -30,9 +30,5 @@ serve: containers
 	-$(dc) run --service-ports web
 	$(dc) down
 
-docsite:
-	rm docs/matts-list.com/Dockerfile
-	cp web/public/favicon.ico docs/matts-list.com/
-
 containers:
 	$(dc) build --quiet --parallel
