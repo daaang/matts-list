@@ -1,8 +1,8 @@
 import List from './List'
 
-function App () {
+function App (props) {
   return (
-    <List />
+    <List user={props.user} />
   )
 }
 

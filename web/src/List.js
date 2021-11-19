@@ -5,10 +5,12 @@ class List extends React.Component {
   constructor (props) {
     super(props)
 
+    this.localKey = (props.user) ? 'items-' + props.user.id : 'items'
+
     const initItems = () => {
       if (props.initItems) return props.initItems
 
-      const localItems = JSON.parse(window.localStorage.getItem('items'))
+      const localItems = JSON.parse(window.localStorage.getItem(this.localKey))
       if (localItems) return localItems
       return []
     }
@@ -21,7 +23,7 @@ class List extends React.Component {
 
   setState (state) {
     if (typeof state.items !== 'undefined') {
-      window.localStorage.setItem('items', JSON.stringify(state.items))
+      window.localStorage.setItem(this.localKey, JSON.stringify(state.items))
     }
 
     super.setState(state)

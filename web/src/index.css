@@ -3,11 +3,6 @@ body {
   margin: 0 auto;
 }
 
-#root {
-  width: 40ex;
-  margin: 0 auto;
-}
-
 [aria-hidden=true] {
   display: none;
 }
