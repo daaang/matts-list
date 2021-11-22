@@ -1,0 +1,20 @@
+name: Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        make-target:
+        - test
+        - features
+    steps:
+    - uses: actions/checkout@v2
+    - name: Run tests
+      run: 'make ${{ matrix.make-target }}'
