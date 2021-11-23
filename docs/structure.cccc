@@ -1,0 +1,145 @@
+workspace {
+  model {
+    matt = person "Matt the User"
+    dev = person "Matt the Architect"
+
+    auth = softwareSystem "Netlify Identity" "Authentication as a service provided by Netlify" "External System"
+
+    mattslist = softwareSystem "Matt's List" "This project" {
+      pwa = container "Progressive Web Application" "An offline-first web application under /web" "javascript/react" "Webapp" {
+        index = component "index.html" "The static html page that will modify itself with javascript" "html file" "Webapp"
+        untestedjs = component "index.js" "Handle logging in and out and pass user information and JWT to the App component" "untested react component" "Webapp"
+        app = component "App.js" "Nothing yet" "react component" "Webapp"
+        list = component "List.js" "Renders a list of items" "react component" "Webapp"
+      }
+
+      api = container "Application Programming Interface" "An application that allows data to persist across multiple devices under /api" "rust/actix"
+
+      features = container "End-to-end Acceptance Tests" "An application that can use a browser to test that all these pieces are fitting together as expected under /features" "ruby/cucumber" {
+        gherkin = component "Gherkin .feature files" "The actual tests in plain English"
+        featuresteps = component "Step definitions" "Translate from gherkin to ruby code that knows how to use the UI"
+        featurerb = component "Ruby support code" "Set up selenium and define UI details for driving the browser"
+        featuredocker = component "Docker/gemfile code" "Define how to set up and run all the docker containers necessary for running acceptance tests"
+      }
+
+      docsite = container "Companion Website" "A website about the list application under /docs/matts-list.com" "html/css" "Website"
+      database = container "Database" "" "CockroachDB" "Database"
+    }
+
+    // Everything involving myself
+    matt -> list "Manage to-do list"
+    matt -> docsite "Learn about Matt's List" "https/html"
+    matt -> index "Visit with browser"
+    matt -> untestedjs "Click login button"
+    auth -> matt "Verify Matt's identity"
+    dev -> gherkin "Define desired behavior"
+
+    // The companion site and index page link to each other.
+    index -> docsite "Link to"
+    docsite -> index "Link to"
+
+    // I haven't started building the API yet; all I know is the PWA
+    // talks to it, and it talks to the database.
+    pwa -> api "Send events and retrieve state" "https/json"
+    api -> database "Read and write" "diesel/postgres"
+
+    // PWA components
+    index -> untestedjs "Render"
+    untestedjs -> auth "Authenticate" "netlify-identity-widget npm package"
+    untestedjs -> app "Render with user data"
+    app -> api "Build authenticated requests"
+    app -> list "Render with user data"
+
+    // Feature components
+    featuredocker -> gherkin "Run the tests"
+    featuredocker -> featuresteps "Interpret the tests"
+    featuresteps -> featurerb "Interpret the UI"
+    featuredocker -> pwa "Build an nginx container with static content"
+    featuredocker -> api "Build the actual production container"
+    featuredocker -> database "Build a CockroachDB container"
+    featurerb -> pwa "Drive the UI to manage a to-do list"
+
+    live = deploymentEnvironment "Live Deployment" {
+      deploymentNode "Netlify" "" "CDN" {
+        deploymentNode "matts-list.app" "" "Site" {
+          containerInstance pwa
+        }
+
+        deploymentNode "matts-list.com" "" "Site" {
+          containerInstance docsite
+        }
+      }
+
+      deploymentNode "DigitalOcean Kubernetes" "" "Host" {
+        containerInstance api
+      }
+
+      deploymentNode "CockroachDB Serverless" "" "Host" {
+        containerInstance database
+      }
+    }
+
+    test = deploymentEnvironment "Acceptance Tests" {
+      deploymentNode "web:80" "" "docker container" {
+        containerInstance pwa
+      }
+
+      deploymentNode "api:80" "" "docker container" {
+        containerInstance api
+      }
+
+      deploymentNode "db:8080" "" "docker container" {
+        containerInstance database
+      }
+
+      deploymentNode "docker-compose run features" "" "docker container" {
+        containerInstance features
+      }
+    }
+  }
+
+  views {
+    systemContext mattslist {
+      include *
+    }
+
+    container mattslist {
+      include *
+    }
+
+    component pwa {
+      include *
+    }
+
+    component features {
+      include *
+    }
+
+    deployment * live {
+      include *
+    }
+
+    deployment * test {
+      include *
+    }
+
+    theme default
+    styles {
+      element "External System" {
+        background #999999
+      }
+
+      element "Website" {
+        shape WebBrowser
+      }
+
+      element "Webapp" {
+        shape MobileDevicePortrait
+      }
+
+      element "Database" {
+        shape Cylinder
+      }
+    }
+  }
+}

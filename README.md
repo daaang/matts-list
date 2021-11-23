@@ -3,7 +3,10 @@ Matt's List
 
 I'm Matt and this is my to do list. The latest deployment of the
 application is at <https://matts-list.app>, and there's a companion
-website at <https://matts-list.com>.
+website at <https://matts-list.com>. If you're trying to get a sense of
+how this is all put together, [I made some diagrams][1].
+
+[1]: docs#readme
 
 Make commands
 -------------
@@ -17,17 +20,17 @@ Make commands
 
 ### Dependencies
 
--   [Docker][1] (with docker-compose) is all you need to run all
+-   [Docker][2] (with docker-compose) is all you need to run all
     the tests.
 
-[1]: https://www.docker.com/products/docker-desktop
+[2]: https://www.docker.com/products/docker-desktop
 
 That said, if you're planning on doing local development work, you'll
 probably want to be running nodejs locally. It's the difference between
 taking a couple seconds versus a couple minutes to run unit tests. See
-[the dependencies for web development][2].
+[the dependencies for web development][3].
 
-[2]: web#dependencies
+[3]: web#dependencies
 
 Layout
 ------
@@ -43,9 +46,9 @@ Layout
         directory contains the Gemfiles and Dockerfile for actually
         running the acceptance tests.
 -   **web/** is the single-page web application, implemented in
-    javascript and react. It has [its own README][2].
+    javascript and react. It has [its own README][4].
 
-[3]: web#readme
+[4]: web#readme
 
 Glossary
 --------
@@ -83,6 +86,7 @@ Decisions
 5.  [Deploy and handle identity with Netlify][ADR-5]
 6.  [Maintain static HTML for the second site][ADR-6]
 7.  [Start hosting the API with DigitalOcean and CockroachDB][ADR-7]
+8.  [Start building the API with Rust][ADR-8]
 
 [ADR-1]: docs/adr/0001-develop-the-api-static-site-and-acceptance-tests-in-isolation.md
 [ADR-2]: docs/adr/0002-use-ruby-for-writing-acceptance-tests.md
@@ -91,3 +95,4 @@ Decisions
 [ADR-5]: docs/adr/0005-deploy-and-handle-identity-with-netlify.md
 [ADR-6]: docs/adr/0006-maintain-static-html-for-the-second-site.md
 [ADR-7]: docs/adr/0007-start-hosting-the-api-with-digitalocean-and-cockroachdb.md
+[ADR-8]: docs/adr/0008-start-building-the-api-with-rust.md
