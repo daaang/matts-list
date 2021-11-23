@@ -6,7 +6,8 @@ on:
   pull_request:
 
 jobs:
-  test:
+  run-suite:
+    name: Run suite
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false

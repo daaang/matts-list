@@ -1,4 +1,4 @@
-.PHONY: clean test containers teardown
+.PHONY: clean distclean test containers teardown
 
 build: node_modules public/* src/*
 	yarn build
@@ -7,7 +7,10 @@ node_modules: package.json yarn.lock
 	yarn install
 
 clean:
-	rm -rf build coverage node_modules
+	rm -rf build coverage
+
+distclean: clean
+	rm -rf node_modules
 
 # Clean up any stray docker-compose artifacts
 teardown:
