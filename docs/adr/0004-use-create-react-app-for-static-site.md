@@ -1,6 +1,6 @@
 # 4. Use Create React App for the static site
 
-Data: 2021-10-08
+Date: 2021-10-08
 
 ## Status
 

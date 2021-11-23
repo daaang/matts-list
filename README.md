@@ -80,8 +80,14 @@ Decisions
 2.  [Use ruby for writing acceptance tests][ADR-2]
 3.  [Use the MIT license][ADR-3]
 4.  [Use Create React App for the static site][ADR-4]
+5.  [Deploy and handle identity with Netlify][ADR-5]
+6.  [Maintain static HTML for the second site][ADR-6]
+7.  [Start hosting the API with DigitalOcean and CockroachDB][ADR-7]
 
 [ADR-1]: docs/adr/0001-develop-the-api-static-site-and-acceptance-tests-in-isolation.md
 [ADR-2]: docs/adr/0002-use-ruby-for-writing-acceptance-tests.md
 [ADR-3]: docs/adr/0003-use-the-mit-license.md
 [ADR-4]: docs/adr/0004-use-create-react-app-for-static-site.md
+[ADR-5]: docs/adr/0005-deploy-and-handle-identity-with-netlify.md
+[ADR-6]: docs/adr/0006-maintain-static-html-for-the-second-site.md
+[ADR-7]: docs/adr/0007-start-hosting-the-api-with-digitalocean-and-cockroachdb.md
