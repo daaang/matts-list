@@ -17,7 +17,7 @@ software system, and Matt the Architect defines desired behavior with
 the Matt's List software system. The external software system is Netlify
 Identity; the Matt's List software system uses Netlify Identity for
 authentication, and Netlify Identity verifies Matt's identity with Matt
-the User.][1]
+the User.][2]
 
 ![This diagram is like the one before except that the Matt's List
 software system has been divided into five containers: first is the
@@ -31,7 +31,7 @@ fourth is the Database, and the API can read from and write to the
 Database; and fifth is the End-to-end Acceptance Tests in /features and
 which know how to build docker containers for the PWA, the API, and the
 Database. Matt the Architect defines desired behavior with the
-End-to-end Acceptance Tests.][2]
+End-to-end Acceptance Tests.][3]
 
 ### PWA Components ###
 
@@ -45,7 +45,7 @@ login button in index.js, and manages his to-do list with List.js. The
 Companion Website and index.html link to one another, and index.html
 surrounds index.js. Index.js uses the Netlify Identity Widget to engage
 with Netlify Identity, and it passes user data to App.js. App.js passes
-user data to List.js and builds requests for the API.][3]
+user data to List.js and builds requests for the API.][4]
 
 ### End-to-end Acceptance Test Components ###
 
@@ -61,7 +61,7 @@ Docker/gemfile support code builds docker containers for the PWA, the
 API, and the Database, and it runs the tests in the Gherkin .feature
 files and interprets the tests with the Step definitions. The Step
 definitions use the UI with the Ruby support code, and the Ruby support
-code drives the UI to manage a to-do list with the PWA.][4]
+code drives the UI to manage a to-do list with the PWA.][5]
 
 Deployments
 -----------
@@ -72,17 +72,17 @@ Deployments
 to Netlify at matts-list.com and that the PWA is deployed to
 Netlify at matts-list.app. It also shows that the API is
 deployed in DigitalOcean Kubernetes and that the Database is
-deployed in CockroachDB Serverless.][5]
+deployed in CockroachDB Serverless.][6]
 
 ### Testing ###
 
 ![This diagram shows that the End-to-end Acceptance Tests run with make
 features. The PWA is at web:80; the API is at api:80; and the Database
-is at db:8080.][6]
+is at db:8080.][7]
 
-[1]: ./diagrams/context.jpg             "System Context for Matt's List"
-[2]: ./diagrams/containers.jpg          "Containers in Matt's List"
-[3]: ./diagrams/components-pwa.jpg      "Components in the PWA"
-[4]: ./diagrams/components-features.jpg "Components in the Acceptance Tests"
-[5]: ./diagrams/deployment-live.jpg     "Live Deployment"
-[6]: ./diagrams/deployment-features.jpg "Testing Deployment"
+[2]: ./diagrams/context.jpg             "System Context for Matt's List"
+[3]: ./diagrams/containers.jpg          "Containers in Matt's List"
+[4]: ./diagrams/components-pwa.jpg      "Components in the PWA"
+[5]: ./diagrams/components-features.jpg "Components in the Acceptance Tests"
+[6]: ./diagrams/deployment-live.jpg     "Live Deployment"
+[7]: ./diagrams/deployment-features.jpg "Testing Deployment"
