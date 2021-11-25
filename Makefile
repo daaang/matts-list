@@ -1,4 +1,4 @@
-dc = docker-compose --file features/support/docker-compose.yml --project-directory .
+dc = docker-compose --file features/test-runner/docker-compose.yml --project-directory .
 .PHONY: all clean test features serve docsite containers teardown
 
 # Default action is running all unit and acceptance tests
