@@ -9,4 +9,7 @@ In case you the reader are unfamiliar with [cucumber][1], these files
 are also runnable tests, with definitions in the `steps/` directory and
 additional support code in `support/`.
 
+Everything needed to set up the environment that actually runs the tests
+is in `test-runner/`.
+
 [1]: https://cucumber.io

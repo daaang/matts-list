@@ -15,7 +15,7 @@ RUN useradd -d /tmp tester \
 #
 #     docker run --rm -v "$PWD":/usr/src/app -w /usr/src/app ruby:3.0 bundle install
 WORKDIR /usr/src/app
-COPY support/Gemfile support/Gemfile.lock ./
+COPY test-runner/Gemfile test-runner/Gemfile.lock ./
 RUN bundle install
 
 # After building dependencies, then copy in the code (which is much more

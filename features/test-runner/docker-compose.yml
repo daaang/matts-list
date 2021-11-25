@@ -17,7 +17,7 @@ services:
   features:
     build:
       context: ./features
-      dockerfile: support/Dockerfile
+      dockerfile: test-runner/Dockerfile
     networks:
     - frontend
     depends_on:
