@@ -67,6 +67,8 @@
     ]
   },
   "devDependencies": {
+    "@react-mock/fetch": "^0.3.0",
+    "node-fetch": "^2",
     "standard": "^16.0.4"
   },
   "resolutions": {

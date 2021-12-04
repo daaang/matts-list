@@ -1,71 +1,90 @@
 /* global jest, describe, beforeEach, afterEach, test, expect */
 import { render, screen, getByRole, fireEvent } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { FetchMock } from '@react-mock/fetch'
 import List from './List'
 
-describe('multiple renderings', () => {
-  const world = {}
-  world.render = x => { world.unmount = render(x).unmount }
-  world.addItem = name => {
-    userEvent.click(getButtonAddItem())
-    userEvent.type(activeElement(), name + '{enter}')
-  }
+// Second pass: there are three ways I intend to mock the fetch API:
+//
+// 1.  Successful responses can just be a string response body.
+// 2.  Responding with a non-2xx integer results in a bad response.
+// 3.  A rejecting promise will cause fetch to reject with the error.
+//
+// Or in JSX:
+//
+//     <FetchMock
+//       mocks={[
+//         { matcher: /success/, response: 'body text' }
+//         { matcher: /badstatus/, response: 404 }
+//         { matcher: /badwithbody/, response: { status: 404, body: 'body' }
+//         { matcher: /error/, response: async () => { throw AnyObject } }
+//       ]}
+//     >
+//       <List />
+//     </FetchMock>
+//
+// The format looks like this:
+//
+//     try {
+//       const response = await fetch('...')
+//       if (response.ok) {
+//         const body = await response.text()
+//         // Success: body is the response body string
+//       } else {
+//         // Bad status: response.status is a non-2xx integer
+//       }
+//     } catch(error) {
+//       // Rejecting promise: error is the object it rejected with
+//     }
+//
+// Tentatively, where I'm currently using localStorage to hold the list
+// of items, I'll store two lists of items, one list of transformations,
+// and a nanoid.
+//
+// When there are no transformations, the two lists are the same. Every
+// 5 seconds, we send our nanoid to the api. If we're up to date, it
+// responds with ok. If we're not, the api sends an up to date list and
+// corresponding nanoid.
+//
+// All such requests will time out after 60 seconds (and they'll block
+// other requests while waiting).
+//
+// When adding a transformation, the first step is to perform it on the
+// active list, and the second step is to push it to the transformation
+// array.
+//
+// Every 5 seconds, we look at the transformations. If there are none,
+// we send the state id as usual. If there are any, we send the first
+// one to the api along with the state id. If the api responds ok and
+// with a new state id, then we shift out the first transformation,
+// apply it to the backup list, set the new state id, and immediately
+// prep the next fetch command (regardless of whether there are more
+// transformations).
+//
+// If the api responds 5xx or times out, then we leave everything be and
+// try again later (if 5xx, wait for the timeout before retrying). If
+// the api responds 4xx, the basic scenario is that we shift it out of
+// the transformations and regenerate the current item list (possibly
+// modifying and/or removing some transformations on the way).
+//
+// That said, it's possible the server will give a specific reason for
+// rejection, e.g. a colliding item id, in which case we can just
+// generate a new id and try again.
+//
+// As I write the tests, I suppose every possible action can have a mock
+// rejection for any conceivable reason, and I need to define how I
+// expect the web client to behave.
+//
+// Once this is all written and working, I can move on to the actual API
+// and database. And once the features are using them, then I can
+// finally deploy them in reality. And then, finally, I can start
+// working on more features.
+//
+// But also by the way, yeah, I think I'll go with kubernetes api
+// versions. I feel like google knows what they're doing, and v1/v2/v3
+// plus vXalphaY and vXbetaY seem pretty solid.
 
-  world.users = [{
-    id: '1',
-    name: 'user 1',
-    email: 'user1@xyz.net'
-  }, {
-    id: '2',
-    name: 'user 2',
-    email: 'user2@xyz.net'
-  }]
-
-  test('maintains state between renders', () => {
-    world.render(<List />)
-    world.addItem('wash dishes')
-    expect(queryListItem(/wash dishes/i)).toBeDue()
-
-    world.unmount()
-    world.render(<List />)
-    expect(queryListItem(/wash dishes/i)).toBeDue()
-    userEvent.click(getButton(/dismiss wash dishes/i))
-    expect(queryListItem(/wash dishes/i)).toBeNull()
-  })
-
-  test('maintains different lists for different users', () => {
-    world.render(<List />)
-    world.addItem('wash dishes')
-
-    world.unmount()
-    world.render(<List user={world.users[0]} />)
-    world.addItem('wipe counter')
-
-    world.unmount()
-    world.render(<List user={world.users[1]} />)
-    world.addItem('polish doorknobs')
-
-    world.unmount()
-    world.render(<List />)
-    expect(queryListItem(/wash dishes/i)).toBeDue()
-    expect(queryListItem(/wipe counter/i)).toBeNull()
-    expect(queryListItem(/polish doorknobs/i)).toBeNull()
-
-    world.unmount()
-    world.render(<List user={world.users[0]} />)
-    expect(queryListItem(/wash dishes/i)).toBeNull()
-    expect(queryListItem(/wipe counter/i)).toBeDue()
-    expect(queryListItem(/polish doorknobs/i)).toBeNull()
-
-    world.unmount()
-    world.render(<List user={world.users[1]} />)
-    expect(queryListItem(/wash dishes/i)).toBeNull()
-    expect(queryListItem(/wipe counter/i)).toBeNull()
-    expect(queryListItem(/polish doorknobs/i)).toBeDue()
-  })
-})
-
-describe('a new List', () => {
+describe('a new List with nobody logged in', () => {
   beforeEach(() => {
     render(<List initItems={[]} />)
   })
@@ -426,6 +445,124 @@ describe('a list with a complete item and a dismissed item', () => {
   })
 })
 
+describe('multiple renderings', () => {
+  const world = {}
+  world.render = x => { world.unmount = render(x).unmount }
+  world.addItem = name => {
+    userEvent.click(getButtonAddItem())
+    userEvent.type(activeElement(), name + '{enter}')
+  }
+
+  world.users = [{
+    id: '1',
+    name: 'user 1',
+    email: 'user1@xyz.net'
+  }, {
+    id: '2',
+    name: 'user 2',
+    email: 'user2@xyz.net'
+  }]
+
+  describe('a list with one item', () => {
+    beforeEach(() => {
+      world.render(<List />)
+      screen.queryAllByRole('button', { name: /dismiss/i }).forEach(dismiss => {
+        userEvent.click(dismiss)
+      })
+      world.addItem('wash dishes')
+    })
+
+    test('the item is on the list', () => {
+      expect(queryListItem(/wash dishes/i)).toBeDue()
+    })
+
+    describe('after a reload', () => {
+      beforeEach(() => {
+        world.unmount()
+        world.render(<List />)
+      })
+
+      test('the item is still on the list', () => {
+        expect(queryListItem(/wash dishes/i)).toBeDue()
+      })
+
+      describe('when the item is dismissed', () => {
+        beforeEach(() => {
+          userEvent.click(getButton(/dismiss wash dishes/i))
+        })
+
+        test('the item is no longer on the list', () => {
+          expect(queryListItem(/wash dishes/i)).toBeNull()
+        })
+
+        describe('after another reload', () => {
+          beforeEach(() => {
+            world.unmount()
+            world.render(<List />)
+          })
+
+          test('the item is still not on the list', () => {
+            expect(queryListItem(/wash dishes/i)).toBeNull()
+          })
+        })
+      })
+    })
+
+    describe('after users A and B take turns logging in to add one item, then log out', () => {
+      beforeEach(() => {
+        world.unmount()
+        world.render(<List user={world.users[0]} />)
+        screen.queryAllByRole('button', { name: /dismiss/i }).forEach(dismiss => {
+          userEvent.click(dismiss)
+        })
+        world.addItem('wipe counter')
+
+        world.unmount()
+        world.render(<List user={world.users[1]} />)
+        screen.queryAllByRole('button', { name: /dismiss/i }).forEach(dismiss => {
+          userEvent.click(dismiss)
+        })
+        world.addItem('polish doorknobs')
+
+        world.unmount()
+        world.render(<List />)
+      })
+
+      test('only the first item, belonging to nobody, is visible', () => {
+        expect(queryListItem(/wash dishes/i)).toBeDue()
+        expect(queryListItem(/wipe counter/i)).toBeNull()
+        expect(queryListItem(/polish doorknobs/i)).toBeNull()
+      })
+
+      describe('when user A logs back in', () => {
+        beforeEach(() => {
+          world.unmount()
+          world.render(<List user={world.users[0]} />)
+        })
+
+        test("only user A's item is visible", () => {
+          expect(queryListItem(/wash dishes/i)).toBeNull()
+          expect(queryListItem(/wipe counter/i)).toBeDue()
+          expect(queryListItem(/polish doorknobs/i)).toBeNull()
+        })
+
+        describe('when user B logs back in', () => {
+          beforeEach(() => {
+            world.unmount()
+            world.render(<List user={world.users[1]} />)
+          })
+
+          test("only user B's item is visible", () => {
+            expect(queryListItem(/wash dishes/i)).toBeNull()
+            expect(queryListItem(/wipe counter/i)).toBeNull()
+            expect(queryListItem(/polish doorknobs/i)).toBeDue()
+          })
+        })
+      })
+    })
+  })
+})
+
 /* global document */
 const activeElement = () => { return document.activeElement || document.body }
 const getButtonClear = () => screen.getByRole('button', { name: /clear/i })
@@ -446,6 +583,14 @@ const queryListItem = name => {
     return checkbox
   }
 }
+
+const findListItem = (name, timeout) => new Promise((resolve, reject) => {
+  screen.findByRole('checkbox', { name }, { timeout }).then(checkbox => {
+    resolve(checkbox)
+  }).catch(() => {
+    resolve(null)
+  })
+})
 
 const queryAllListItems = () =>
   screen.getAllByRole('checkbox').map(checkbox => new ListItem(checkbox))
