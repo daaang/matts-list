@@ -21,24 +21,20 @@ class List extends React.Component {
     }
   }
 
-  setState (state) {
-    if (typeof state.items !== 'undefined') {
-      window.localStorage.setItem(this.localKey, JSON.stringify(state.items))
-    }
-
-    super.setState(state)
+  setItems (cb) {
+    const items = cb(this.state.items.slice())
+    window.localStorage.setItem(this.localKey, JSON.stringify(items))
+    this.setState({ items })
   }
 
   clearList () {
-    this.setState({ items: [] })
+    this.setItems(() => [])
   }
 
   performReset () {
-    this.setState({
-      items: this.state.items
-        .filter(item => item.phase === 'due')
-        .map(item => item.copyItem({ dismissed: false }))
-    })
+    this.setItems(items => items
+      .filter(item => item.phase === 'due')
+      .map(item => item.copyItem({ dismissed: false })))
   }
 
   startAddingItem () {
@@ -56,18 +52,16 @@ class List extends React.Component {
     this.setState({ newItemForm: '' })
 
     if (itemName) {
-      const items = this.state.items.slice()
-      items.push(new AbstractItem(itemName))
-      this.setState({ items: items })
+      this.setItems(items => items.concat([new AbstractItem(itemName)]))
     }
   }
 
   changeItem (itemIndex, override) {
-    const before = this.state.items.slice(0, itemIndex)
-    const after = this.state.items.slice(itemIndex + 1)
-
-    before.push(this.state.items[itemIndex].copyItem(override))
-    this.setState({ items: before.concat(after) })
+    this.setItems(items => {
+      return items.slice(0, itemIndex)
+        .concat([items[itemIndex].copyItem(override)])
+        .concat(items.slice(itemIndex + 1))
+    })
   }
 
   itemPosition (itemIndex) {
@@ -86,22 +80,21 @@ class List extends React.Component {
   }
 
   dragOverItem (itemIndex) {
-    this.setState({
-      items: this.reorderItems(this.state.draggingItem, itemIndex),
-      draggingItem: itemIndex
-    })
+    const draggingItem = this.state.draggingItem
+    this.setItems(items => this.reorderItems(items, draggingItem, itemIndex))
+    this.setState({ draggingItem: itemIndex })
   }
 
   moveItem (itemIndex, desiredIndex) {
-    this.setState({ items: this.reorderItems(itemIndex, desiredIndex) })
+    this.setItems(items => this.reorderItems(items, itemIndex, desiredIndex))
   }
 
-  reorderItems (itemIndex, desiredIndex) {
+  reorderItems (items, itemIndex, desiredIndex) {
     const [min, max] = [itemIndex, desiredIndex].sort()
 
-    const before = this.state.items.slice(0, min)
-    const middle = this.state.items.slice(min, max + 1)
-    const after = this.state.items.slice(max + 1)
+    const before = items.slice(0, min)
+    const middle = items.slice(min, max + 1)
+    const after = items.slice(max + 1)
 
     if (itemIndex < desiredIndex) {
       middle.push(middle.shift())
