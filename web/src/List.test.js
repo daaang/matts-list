@@ -1,7 +1,7 @@
 /* global jest, describe, beforeEach, afterEach, test, expect */
 import { render, screen, getByRole, fireEvent } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { FetchMock } from '@react-mock/fetch'
+// import { FetchMock } from '@react-mock/fetch'
 import List from './List'
 
 // Second pass: there are three ways I intend to mock the fetch API:
@@ -583,14 +583,6 @@ const queryListItem = name => {
     return checkbox
   }
 }
-
-const findListItem = (name, timeout) => new Promise((resolve, reject) => {
-  screen.findByRole('checkbox', { name }, { timeout }).then(checkbox => {
-    resolve(checkbox)
-  }).catch(() => {
-    resolve(null)
-  })
-})
 
 const queryAllListItems = () =>
   screen.getAllByRole('checkbox').map(checkbox => new ListItem(checkbox))
