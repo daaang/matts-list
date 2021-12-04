@@ -4,6 +4,8 @@
 # otherwise unconfigured nginx web server.
 FROM node:16.13.0 as builder
 
+ARG REACT_APP_API_HOST
+
 WORKDIR /usr/src/app
 COPY package.json yarn.lock ./
 RUN apt-get update && yarn install
