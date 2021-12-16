@@ -68,9 +68,7 @@ class FakeUser extends User {
   }
 
   jwt () {
-    return new Promise((resolve, reject) => {
-      resolve(this._jwt)
-    })
+    return Promise.resolve(this._jwt)
   }
 }
 

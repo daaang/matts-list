@@ -1,40 +1,70 @@
+/* eslint-disable-next-line no-redeclare */
+/* global fetch, AbortController */
 import React from 'react'
 import { nanoid } from 'nanoid'
+
+const apiDomain = process.env.REACT_APP_API_HOST || 'http://localhost:3000/fake'
+const fetchAPI = (path, data, init) => {
+  const url = new URL(apiDomain + path)
+  for (const k in data) url.searchParams.append(k, data[k])
+  return fetch(url, init)
+}
 
 class List extends React.Component {
   constructor (props) {
     super(props)
 
     this.localKey = (props.user) ? 'items-' + props.user.id : 'items'
+    this.readyToQueryAPI = props.user
 
     const initItems = () => {
       if (props.initItems) return props.initItems
 
       const localItems = JSON.parse(window.localStorage.getItem(this.localKey))
       if (localItems) return localItems
-      return []
     }
 
     this.state = {
       newItemForm: '',
-      items: initItems().map(item => { return new AbstractItem(item) })
+      items: new AbstractList(initItems())
+    }
+  }
+
+  tick () {
+    if (this.readyToQueryAPI) {
+      this.readyToQueryAPI = false
+
+      const controller = new AbortController()
+      fetchAPI('/v1alpha/state',
+        { state: this.state.items.state },
+        { signal: controller.signal }).then(response => {
+        response.text().then(text => {
+          if (text) {
+            const remote = JSON.parse(text)
+            if (remote.items) {
+              this.setItems(() => new AbstractList(remote))
+            }
+          }
+        })
+      }).finally(() => {
+        this.readyToQueryAPI = true
+      })
+      setInterval(() => controller.abort(), 10000)
     }
   }
 
   setItems (cb) {
-    const items = cb(this.state.items.slice())
+    const items = cb(this.state.items)
     window.localStorage.setItem(this.localKey, JSON.stringify(items))
     this.setState({ items })
   }
 
   clearList () {
-    this.setItems(() => [])
+    this.setItems(() => new AbstractList())
   }
 
   performReset () {
-    this.setItems(items => items
-      .filter(item => item.phase === 'due')
-      .map(item => item.copyItem({ dismissed: false })))
+    this.setItems(items => items.reset())
   }
 
   startAddingItem () {
@@ -52,16 +82,12 @@ class List extends React.Component {
     this.setState({ newItemForm: '' })
 
     if (itemName) {
-      this.setItems(items => items.concat([new AbstractItem(itemName)]))
+      this.setItems(items => items.append(itemName))
     }
   }
 
   changeItem (itemIndex, override) {
-    this.setItems(items => {
-      return items.slice(0, itemIndex)
-        .concat([items[itemIndex].copyItem(override)])
-        .concat(items.slice(itemIndex + 1))
-    })
+    this.setItems(items => items.changeItem(itemIndex, override))
   }
 
   itemPosition (itemIndex) {
@@ -81,28 +107,12 @@ class List extends React.Component {
 
   dragOverItem (itemIndex) {
     const draggingItem = this.state.draggingItem
-    this.setItems(items => this.reorderItems(items, draggingItem, itemIndex))
+    this.setItems(items => items.reorderItems(draggingItem, itemIndex))
     this.setState({ draggingItem: itemIndex })
   }
 
   moveItem (itemIndex, desiredIndex) {
-    this.setItems(items => this.reorderItems(items, itemIndex, desiredIndex))
-  }
-
-  reorderItems (items, itemIndex, desiredIndex) {
-    const [min, max] = [itemIndex, desiredIndex].sort()
-
-    const before = items.slice(0, min)
-    const middle = items.slice(min, max + 1)
-    const after = items.slice(max + 1)
-
-    if (itemIndex < desiredIndex) {
-      middle.push(middle.shift())
-    } else {
-      middle.unshift(middle.pop())
-    }
-
-    return before.concat(middle).concat(after)
+    this.setItems(items => items.reorderItems(itemIndex, desiredIndex))
   }
 
   render () {
@@ -111,6 +121,7 @@ class List extends React.Component {
         <DailyReset
           performReset={() => this.performReset()}
           tickPeriod={this.props.tickPeriod || 5000}
+          onTick={() => this.tick()}
         />
         <ol>
           {this.state.items.map((item, index) => (
@@ -214,6 +225,7 @@ class DailyReset extends React.Component {
   }
 
   componentDidMount () {
+    this.props.onTick()
     this.tickInterval = setInterval(() => this.tick(), this.props.tickPeriod)
   }
 
@@ -235,6 +247,8 @@ class DailyReset extends React.Component {
   }
 
   tick () {
+    this.props.onTick()
+
     if (this.isTimeToReset()) {
       this.setState({ nextReset: this.resetAfterNext() })
       this.props.performReset()
@@ -275,6 +289,67 @@ class AutoFocusTextForm extends React.Component {
         <input type='submit' value='Done' />
       </form>
     )
+  }
+}
+
+class AbstractList {
+  constructor (init) {
+    if (typeof init === 'undefined') {
+      this.state = ''
+      this.items = []
+    } else if (typeof init.items === 'undefined') {
+      this.state = ''
+      this.items = init.map(item => new AbstractItem(item))
+    } else {
+      this.state = init.state
+      this.items = init.items.map(item => new AbstractItem(item))
+    }
+  }
+
+  get length () {
+    return this.items.length
+  }
+
+  map (cb) {
+    return this.items.map(cb)
+  }
+
+  reset () {
+    return new AbstractList(this.items
+      .filter(item => item.phase === 'due')
+      .map(item => item.copyItem({ dismissed: false })))
+  }
+
+  append (item) {
+    return new AbstractList(this.items.concat([new AbstractItem(item)]))
+  }
+
+  changeItem (itemIndex, override) {
+    return new AbstractList(this.items.slice(0, itemIndex)
+      .concat([this.items[itemIndex].copyItem(override)])
+      .concat(this.items.slice(itemIndex + 1)))
+  }
+
+  reorderItems (indexToMove, destinationIndex) {
+    const [min, max] = [indexToMove, destinationIndex].sort()
+
+    // The `middle` array contains both indeces as its first and last
+    // items, while the `before` and `after` arrays contain neither.
+    const before = this.items.slice(0, min)
+    const middle = this.items.slice(min, max + 1)
+    const after = this.items.slice(max + 1)
+
+    if (indexToMove < destinationIndex) {
+      // [before] i ... d [after]
+      // [before] ... d i [after]
+      middle.push(middle.shift())
+    } else {
+      // [before] d ... i [after]
+      // [before] i d ... [after]
+      middle.unshift(middle.pop())
+    }
+
+    return new AbstractList(before.concat(middle).concat(after))
   }
 }
 

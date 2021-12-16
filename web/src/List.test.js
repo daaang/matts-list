@@ -1,7 +1,7 @@
-/* global jest, describe, beforeEach, afterEach, test, expect */
+/* global jest, describe, beforeEach, afterEach, test, expect, fetch */
 import { render, screen, getByRole, fireEvent } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-// import { FetchMock } from '@react-mock/fetch'
+import { FetchMock } from '@react-mock/fetch'
 import List from './List'
 
 // Second pass: there are three ways I intend to mock the fetch API:
@@ -84,7 +84,7 @@ import List from './List'
 // versions. I feel like google knows what they're doing, and v1/v2/v3
 // plus vXalphaY and vXbetaY seem pretty solid.
 
-describe('a new List with nobody logged in', () => {
+describe('a new List', () => {
   beforeEach(() => {
     render(<List initItems={[]} />)
   })
@@ -364,6 +364,7 @@ describe('a list with three items', () => {
 describe('a list with a complete item and a dismissed item', () => {
   beforeEach(() => {
     jest.useFakeTimers('modern')
+    jest.spyOn(global, 'fetch').mockImplementation(() => Promise.reject(new Error()))
     render(
       <List
         tickPeriod={10 * 60 * 1000}
@@ -378,6 +379,7 @@ describe('a list with a complete item and a dismissed item', () => {
 
   afterEach(() => {
     jest.useRealTimers()
+    fetch.mockRestore()
   })
 
   test('the complete item is visible and complete', () => {
@@ -423,6 +425,10 @@ describe('a list with a complete item and a dismissed item', () => {
       test('the complete item is still not on the list', () => {
         expect(queryListItem(/wash dishes/i)).toBeNull()
       })
+
+      test('the local app has made 0 calls to the api', () => {
+        expect(fetch).toHaveBeenCalledTimes(0)
+      })
     })
   })
 
@@ -447,7 +453,15 @@ describe('a list with a complete item and a dismissed item', () => {
 
 describe('multiple renderings', () => {
   const world = {}
-  world.render = x => { world.unmount = render(x).unmount }
+
+  world.render = x => {
+    world.unmount = render(
+      <FetchMock mocks={[{ matcher: /.*/, response: 500 }]}>
+        {x}
+      </FetchMock>
+    ).unmount
+  }
+
   world.addItem = name => {
     userEvent.click(getButtonAddItem())
     userEvent.type(activeElement(), name + '{enter}')
@@ -563,6 +577,191 @@ describe('multiple renderings', () => {
   })
 })
 
+describe('calling the api', () => {
+  const renderList = mocks => {
+    render(
+      <FetchMock mocks={mocks}>
+        <List
+          user={{
+            id: 123,
+            name: 'Chuck',
+            email: 'cgood@mailinator.com',
+            jwt: () => Promise.resolve('fake jwt')
+          }}
+        />
+      </FetchMock>
+    )
+  }
+
+  beforeEach(() => {
+    jest.useFakeTimers('modern')
+  })
+
+  afterEach(() => {
+    jest.useRealTimers()
+  })
+
+  describe('checking api state', () => {
+    test('it pulls initial state from the api', async () => {
+      renderList([{
+        matcher: /\/v1alpha\/state/,
+        response: JSON.stringify({
+          state: 'abc123',
+          items: [{
+            id: '1',
+            name: 'wash dishes',
+            phase: 'due',
+            dismissed: false
+          }, {
+            id: '2',
+            name: 'fold laundry',
+            phase: 'complete',
+            dismissed: false
+          }, {
+            id: '3',
+            name: 'pay bills',
+            phase: 'due',
+            dismissed: true
+          }]
+        })
+      }])
+
+      expect(await findListItem(/wash dishes/i)).toBeDue()
+      expect(queryListItem(/fold laundry/i)).toBeComplete()
+      expect(queryListItem(/pay bills/i)).toBeNull()
+    })
+
+    test('the list picks up remote changes from the api', async () => {
+      const world = { counter: 0 }
+
+      renderList([{
+        matcher: /\/v1alpha\/state/,
+        response: url => {
+          world.counter += 1
+          const requestState = new URL(url).searchParams.get('state')
+
+          if (world.counter < 5) {
+            if (requestState === '1') {
+              return '{"state":"1"}'
+            } else {
+              return JSON.stringify({
+                state: '1',
+                items: [{
+                  id: 'a',
+                  name: 'first item',
+                  phase: 'due',
+                  dismissed: false
+                }]
+              })
+            }
+          } else if (world.counter < 20) {
+            if (requestState === '2') {
+              return '{"state":"2"}'
+            } else {
+              return JSON.stringify({
+                state: '2',
+                items: [{
+                  id: 'a',
+                  name: 'first item',
+                  phase: 'due',
+                  dismissed: false
+                }, {
+                  id: 'b',
+                  name: 'second item',
+                  phase: 'due',
+                  dismissed: false
+                }]
+              })
+            }
+          } else {
+            if (requestState === '3') {
+              return '{"state":"3"}'
+            } else {
+              return JSON.stringify({
+                state: '3',
+                items: [{
+                  id: 'a',
+                  name: 'first item',
+                  phase: 'due',
+                  dismissed: false
+                }, {
+                  id: 'b',
+                  name: 'second item',
+                  phase: 'complete',
+                  dismissed: false
+                }]
+              })
+            }
+          }
+        }
+      }])
+
+      expect(await findListItem(/first item/i)).toBeDue()
+      expect(await findListItem(/second item/i, 50)).toBeNull()
+
+      for (let i = 0; true; i++) {
+        jest.advanceTimersByTime(5000)
+
+        if (await findListItem(/second item/i, 10) === null) {
+          expect(i).toBeLessThan(100)
+        } else {
+          break
+        }
+      }
+
+      expect(await findListItem(/first item/i)).toBeDue()
+      expect(await findListItem(/second item/i)).toBeDue()
+
+      for (let i = 0; true; i++) {
+        jest.advanceTimersByTime(5000)
+
+        if ((await findListItem(/second item/i, 10)).phase === 'complete') {
+          break
+        } else {
+          expect(i).toBeLessThan(100)
+        }
+      }
+    })
+
+    test('the list stores the remote state id', async () => {
+      const world = { requestState: null }
+
+      renderList([{
+        matcher: /\/v1alpha\/state/,
+        response: url => {
+          world.requestState = new URL(url).searchParams.get('state')
+
+          if (world.requestState === '1') {
+            return '{"state":"1"}'
+          } else {
+            return JSON.stringify({
+              state: '1',
+              items: [{
+                id: 'a',
+                name: 'remote item',
+                phase: 'due',
+                dismissed: false
+              }]
+            })
+          }
+        }
+      }])
+
+      expect(await findListItem(/remote item/i)).toBeDue()
+
+      for (let i = 0; true; i++) {
+        jest.advanceTimersByTime(5000)
+
+        if (world.requestState === '1') {
+          break
+        } else {
+          expect(i).toBeLessThan(10)
+        }
+      }
+    })
+  })
+})
+
 /* global document */
 const activeElement = () => { return document.activeElement || document.body }
 const getButtonClear = () => screen.getByRole('button', { name: /clear/i })
@@ -586,6 +785,14 @@ const queryListItem = name => {
 
 const queryAllListItems = () =>
   screen.getAllByRole('checkbox').map(checkbox => new ListItem(checkbox))
+
+const findListItem = (name, timeout) => new Promise((resolve, reject) => {
+  screen.findByRole('checkbox', { name }, { timeout }).then(checkbox => {
+    resolve(new ListItem(checkbox))
+  }).catch(() => {
+    resolve(null)
+  })
+})
 
 expect.extend({
   toBeComplete (received) {
