@@ -10,7 +10,8 @@ So all the usual commands work:
 I also maintain a Makefile:
 
 -   `make` or `make build` runs `yarn install` and `yarn build`.
--   `make clean` removes the `build` and `node_modules` directories.
+-   `make clean` removes the `build` directory.
+-   `make distclean` removes the `build` and `node_modules` directories.
 -   `make test` runs the unit tests in a docker container.
 
 At the moment, I'm enforcing 100% unit test coverage. I'm enforcing that
