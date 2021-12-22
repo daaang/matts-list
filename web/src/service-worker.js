@@ -1,6 +1,3 @@
-/* eslint-disable-next-line no-redeclare */
-/* global self */
-
 // This service worker can be customized!
 // See https://developers.google.com/web/tools/workbox/modules
 // for the list of available Workbox modules, or add any other

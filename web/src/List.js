@@ -1,5 +1,4 @@
-/* eslint-disable-next-line no-redeclare */
-/* global fetch, AbortController */
+/* global AbortController */
 import React from 'react'
 import { nanoid } from 'nanoid'
 
