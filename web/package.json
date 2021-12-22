@@ -20,7 +20,7 @@
     }
   },
   "standard": {
-    "globals": [ "fetch", "self" ]
+    "globals": [ "AbortController", "fetch", "self" ]
   },
   "dependencies": {
     "@testing-library/jest-dom": "^5.16.1",

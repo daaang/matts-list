@@ -12,6 +12,7 @@ RUN apt-get update && yarn install
 COPY ./public public/
 COPY ./src src/
 
+ENV CI="true"
 RUN npx standard
 RUN yarn build
 
