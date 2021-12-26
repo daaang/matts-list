@@ -13,7 +13,7 @@ class List extends React.Component {
     super(props)
 
     this.localKey = (props.user) ? 'items-' + props.user.id : 'items'
-    this.readyToQueryAPI = props.user
+    this.isStillMounted = true
 
     const initItems = () => {
       if (props.initItems) return props.initItems
@@ -23,32 +23,69 @@ class List extends React.Component {
     }
 
     this.state = {
+      abortFetch: () => {},
+      items: new AbstractList(initItems()),
       newItemForm: '',
-      items: new AbstractList(initItems())
+      readyToQueryAPI: props.user
     }
   }
 
   tick () {
-    if (this.readyToQueryAPI) {
-      this.readyToQueryAPI = false
+    if (this.state.readyToQueryAPI) {
+      this.setState({ readyToQueryAPI: false })
 
       const controller = new AbortController()
-      fetchAPI('/v1alpha/state',
-        { state: this.state.items.state },
-        { signal: controller.signal }).then(response => {
-        response.text().then(text => {
-          if (text) {
-            const remote = JSON.parse(text)
-            if (remote.items) {
-              this.setItems(() => new AbstractList(remote))
+      this.setState({ abortFetch: () => controller.abort() })
+      setInterval(() => controller.abort(), 10000)
+
+      if (this.state.items.transactions.length > 0) {
+        const transaction = this.state.items.transactions[0]
+        fetchAPI(transaction.uri,
+          transaction.request,
+          { signal: controller.signal }).then(response => {
+          response.text().then(text => {
+            if (text) {
+              const remote = JSON.parse(text)
+              this.setItems(items => items.applyTransaction(remote))
             }
+          })
+        }).catch(() => {
+        }).finally(() => {
+          if (this.isStillMounted) {
+            this.setReadyToFetch()
+            this.tick()
           }
         })
-      }).finally(() => {
-        this.readyToQueryAPI = true
-      })
-      setInterval(() => controller.abort(), 10000)
+      } else {
+        fetchAPI('/v1alpha/state',
+          { state: this.state.items.state },
+          { signal: controller.signal }).then(response => {
+          response.text().then(text => {
+            const remote = JSON.parse(text)
+            if (remote.items && this.isStillMounted) {
+              this.setItems(items => items.sync(remote))
+            }
+          })
+        }).catch(() => {
+        }).finally(() => {
+          if (this.isStillMounted) {
+            this.setReadyToFetch()
+          }
+        })
+      }
     }
+  }
+
+  setReadyToFetch () {
+    this.setState({
+      abortFetch: () => {},
+      readyToQueryAPI: true
+    })
+  }
+
+  componentWillUnmount () {
+    this.isStillMounted = false
+    this.state.abortFetch()
   }
 
   setItems (cb) {
@@ -144,6 +181,7 @@ class List extends React.Component {
         <p>These buttons are only here for testing purposes.</p>
         <button type='button' onClick={() => this.performReset()}>Daily reset</button>
         <button type='button' onClick={() => this.clearList()}>Clear list</button>
+        <div data-testid={(this.state.readyToQueryAPI) ? 'ready-to-fetch' : 'do-not-fetch'} />
       </>
     )
   }
@@ -295,12 +333,21 @@ class AbstractList {
     if (typeof init === 'undefined') {
       this.state = ''
       this.items = []
+      this.remoteState = ''
+      this.remoteItems = []
+      this.transactions = []
     } else if (typeof init.items === 'undefined') {
       this.state = ''
       this.items = init.map(item => new AbstractItem(item))
+      this.remoteState = ''
+      this.remoteItems = []
+      this.transactions = []
     } else {
       this.state = init.state
       this.items = init.items.map(item => new AbstractItem(item))
+      this.remoteState = init.remoteState
+      this.remoteItems = init.remoteItems
+      this.transactions = init.transactions
     }
   }
 
@@ -313,19 +360,44 @@ class AbstractList {
   }
 
   reset () {
-    return new AbstractList(this.items
-      .filter(item => item.phase === 'due')
-      .map(item => item.copyItem({ dismissed: false })))
+    return new AbstractList({
+      remoteState: this.remoteState,
+      remoteItems: this.remoteItems,
+      transactions: this.transactions,
+      state: '',
+      items: this.items
+        .filter(item => item.phase === 'due')
+        .map(item => item.copyItem({ dismissed: false }))
+    })
   }
 
   append (item) {
-    return new AbstractList(this.items.concat([new AbstractItem(item)]))
+    const newItem = new AbstractItem(item)
+    return new AbstractList({
+      remoteState: this.remoteState,
+      remoteItems: this.remoteItems,
+      transactions: this.transactions.concat([{
+        uri: '/v1alpha/add',
+        request: {
+          state: this.remoteState,
+          item: newItem
+        }
+      }]),
+      state: '',
+      items: this.items.concat([newItem])
+    })
   }
 
   changeItem (itemIndex, override) {
-    return new AbstractList(this.items.slice(0, itemIndex)
-      .concat([this.items[itemIndex].copyItem(override)])
-      .concat(this.items.slice(itemIndex + 1)))
+    return new AbstractList({
+      remoteState: this.remoteState,
+      remoteItems: this.remoteItems,
+      transactions: this.transactions,
+      state: '',
+      items: this.items.slice(0, itemIndex)
+        .concat([this.items[itemIndex].copyItem(override)])
+        .concat(this.items.slice(itemIndex + 1))
+    })
   }
 
   reorderItems (indexToMove, destinationIndex) {
@@ -347,7 +419,33 @@ class AbstractList {
       middle.unshift(middle.pop())
     }
 
-    return new AbstractList(before.concat(middle).concat(after))
+    return new AbstractList({
+      remoteState: this.remoteState,
+      remoteItems: this.remoteItems,
+      transactions: this.transactions,
+      state: '',
+      items: before.concat(middle).concat(after)
+    })
+  }
+
+  sync (remote) {
+    return new AbstractList({
+      remoteState: remote.state,
+      remoteItems: remote.items,
+      transactions: this.transactions,
+      state: remote.state,
+      items: remote.items
+    })
+  }
+
+  applyTransaction (remote) {
+    return new AbstractList({
+      remoteState: remote.state,
+      remoteItems: this.items,
+      transactions: this.transactions.slice(1),
+      state: remote.state,
+      items: this.items
+    })
   }
 }
 

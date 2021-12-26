@@ -2,87 +2,8 @@
 import { render, screen, getByRole, fireEvent } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { FetchMock } from '@react-mock/fetch'
+import { nanoid } from 'nanoid'
 import List from './List'
-
-// Second pass: there are three ways I intend to mock the fetch API:
-//
-// 1.  Successful responses can just be a string response body.
-// 2.  Responding with a non-2xx integer results in a bad response.
-// 3.  A rejecting promise will cause fetch to reject with the error.
-//
-// Or in JSX:
-//
-//     <FetchMock
-//       mocks={[
-//         { matcher: /success/, response: 'body text' }
-//         { matcher: /badstatus/, response: 404 }
-//         { matcher: /badwithbody/, response: { status: 404, body: 'body' }
-//         { matcher: /error/, response: async () => { throw AnyObject } }
-//       ]}
-//     >
-//       <List />
-//     </FetchMock>
-//
-// The format looks like this:
-//
-//     try {
-//       const response = await fetch('...')
-//       if (response.ok) {
-//         const body = await response.text()
-//         // Success: body is the response body string
-//       } else {
-//         // Bad status: response.status is a non-2xx integer
-//       }
-//     } catch(error) {
-//       // Rejecting promise: error is the object it rejected with
-//     }
-//
-// Tentatively, where I'm currently using localStorage to hold the list
-// of items, I'll store two lists of items, one list of transformations,
-// and a nanoid.
-//
-// When there are no transformations, the two lists are the same. Every
-// 5 seconds, we send our nanoid to the api. If we're up to date, it
-// responds with ok. If we're not, the api sends an up to date list and
-// corresponding nanoid.
-//
-// All such requests will time out after 60 seconds (and they'll block
-// other requests while waiting).
-//
-// When adding a transformation, the first step is to perform it on the
-// active list, and the second step is to push it to the transformation
-// array.
-//
-// Every 5 seconds, we look at the transformations. If there are none,
-// we send the state id as usual. If there are any, we send the first
-// one to the api along with the state id. If the api responds ok and
-// with a new state id, then we shift out the first transformation,
-// apply it to the backup list, set the new state id, and immediately
-// prep the next fetch command (regardless of whether there are more
-// transformations).
-//
-// If the api responds 5xx or times out, then we leave everything be and
-// try again later (if 5xx, wait for the timeout before retrying). If
-// the api responds 4xx, the basic scenario is that we shift it out of
-// the transformations and regenerate the current item list (possibly
-// modifying and/or removing some transformations on the way).
-//
-// That said, it's possible the server will give a specific reason for
-// rejection, e.g. a colliding item id, in which case we can just
-// generate a new id and try again.
-//
-// As I write the tests, I suppose every possible action can have a mock
-// rejection for any conceivable reason, and I need to define how I
-// expect the web client to behave.
-//
-// Once this is all written and working, I can move on to the actual API
-// and database. And once the features are using them, then I can
-// finally deploy them in reality. And then, finally, I can start
-// working on more features.
-//
-// But also by the way, yeah, I think I'll go with kubernetes api
-// versions. I feel like google knows what they're doing, and v1/v2/v3
-// plus vXalphaY and vXbetaY seem pretty solid.
 
 describe('a new List', () => {
   beforeEach(() => {
@@ -701,9 +622,11 @@ describe('calling the api', () => {
 
       for (let i = 0; true; i++) {
         jest.advanceTimersByTime(5000)
+        await screen.findByTestId('do-not-fetch')
+        await screen.findByTestId('ready-to-fetch')
 
         if (await findListItem(/second item/i, 10) === null) {
-          expect(i).toBeLessThan(100)
+          expect(i).toBeLessThan(5)
         } else {
           break
         }
@@ -714,11 +637,13 @@ describe('calling the api', () => {
 
       for (let i = 0; true; i++) {
         jest.advanceTimersByTime(5000)
+        await screen.findByTestId('do-not-fetch')
+        await screen.findByTestId('ready-to-fetch')
 
         if ((await findListItem(/second item/i, 10)).phase === 'complete') {
           break
         } else {
-          expect(i).toBeLessThan(100)
+          expect(i).toBeLessThan(20)
         }
       }
     })
@@ -751,6 +676,8 @@ describe('calling the api', () => {
 
       for (let i = 0; true; i++) {
         jest.advanceTimersByTime(5000)
+        await screen.findByTestId('do-not-fetch')
+        await screen.findByTestId('ready-to-fetch')
 
         if (world.requestState === '1') {
           break
@@ -758,6 +685,59 @@ describe('calling the api', () => {
           expect(i).toBeLessThan(10)
         }
       }
+    })
+
+    test('tells the API when a new item is added', async () => {
+      const world = {
+        requestState: null,
+        initialState: nanoid() + '-initial',
+        itemAddedState: nanoid() + '-item-added'
+      }
+
+      renderList([{
+        matcher: /\/v1alpha\/state/,
+        response: url => {
+          world.requestState = new URL(url).searchParams.get('state')
+          if (world.requestState === world.initialState ||
+            world.requestState === world.itemAddedState) {
+            return JSON.stringify({ state: world.requestState })
+          } else {
+            return JSON.stringify({
+              state: world.initialState,
+              items: []
+            })
+          }
+        }
+      }, {
+        matcher: /\/v1alpha\/add/,
+        response: url => {
+          return JSON.stringify({ state: world.itemAddedState })
+        }
+      }])
+
+      await screen.findByTestId('do-not-fetch')
+      await screen.findByTestId('ready-to-fetch')
+
+      jest.advanceTimersByTime(5000)
+      await screen.findByTestId('do-not-fetch')
+      await screen.findByTestId('ready-to-fetch')
+
+      expect(world.requestState).toEqual(world.initialState)
+
+      userEvent.click(getButtonAddItem())
+      userEvent.type(activeElement(), 'acquire a dog{enter}')
+      expect(queryListItem(/acquire a dog/i)).toBeDue()
+
+      jest.advanceTimersByTime(5000)
+      await screen.findByTestId('do-not-fetch')
+      await screen.findByTestId('ready-to-fetch')
+
+      jest.advanceTimersByTime(5000)
+      await screen.findByTestId('do-not-fetch')
+      await screen.findByTestId('ready-to-fetch')
+
+      expect(queryListItem(/acquire a dog/i)).toBeDue()
+      expect(world.requestState).toEqual(world.itemAddedState)
     })
   })
 })
