@@ -1,44 +1,105 @@
 import React from 'react'
 import { nanoid } from 'nanoid'
 
+const apiDomain = process.env.REACT_APP_API_HOST || 'http://localhost:3000/fake'
+const fetchAPI = (path, data, init) => {
+  const url = new URL(apiDomain + path)
+  for (const k in data) url.searchParams.append(k, data[k])
+  return fetch(url, init)
+}
+
 class List extends React.Component {
   constructor (props) {
     super(props)
 
     this.localKey = (props.user) ? 'items-' + props.user.id : 'items'
+    this.isStillMounted = true
 
     const initItems = () => {
       if (props.initItems) return props.initItems
 
       const localItems = JSON.parse(window.localStorage.getItem(this.localKey))
       if (localItems) return localItems
-      return []
     }
 
     this.state = {
+      abortFetch: () => {},
+      items: new AbstractList(initItems()),
       newItemForm: '',
-      items: initItems().map(item => { return new AbstractItem(item) })
+      readyToQueryAPI: props.user
     }
   }
 
-  setState (state) {
-    if (typeof state.items !== 'undefined') {
-      window.localStorage.setItem(this.localKey, JSON.stringify(state.items))
-    }
+  tick () {
+    if (this.state.readyToQueryAPI) {
+      this.setState({ readyToQueryAPI: false })
 
-    super.setState(state)
+      const controller = new AbortController()
+      this.setState({ abortFetch: () => controller.abort() })
+      setInterval(() => controller.abort(), 10000)
+
+      if (this.state.items.transactions.length > 0) {
+        const transaction = this.state.items.transactions[0]
+        fetchAPI(transaction.uri,
+          transaction.request,
+          { signal: controller.signal }).then(response => {
+          response.text().then(text => {
+            if (text) {
+              const remote = JSON.parse(text)
+              this.setItems(items => items.applyTransaction(remote))
+            }
+          })
+        }).catch(() => {
+        }).finally(() => {
+          if (this.isStillMounted) {
+            this.setReadyToFetch()
+            this.tick()
+          }
+        })
+      } else {
+        fetchAPI('/v1alpha/state',
+          { state: this.state.items.state },
+          { signal: controller.signal }).then(response => {
+          response.text().then(text => {
+            const remote = JSON.parse(text)
+            if (remote.items && this.isStillMounted) {
+              this.setItems(items => items.sync(remote))
+            }
+          })
+        }).catch(() => {
+        }).finally(() => {
+          if (this.isStillMounted) {
+            this.setReadyToFetch()
+          }
+        })
+      }
+    }
+  }
+
+  setReadyToFetch () {
+    this.setState({
+      abortFetch: () => {},
+      readyToQueryAPI: true
+    })
+  }
+
+  componentWillUnmount () {
+    this.isStillMounted = false
+    this.state.abortFetch()
+  }
+
+  setItems (cb) {
+    const items = cb(this.state.items)
+    window.localStorage.setItem(this.localKey, JSON.stringify(items))
+    this.setState({ items })
   }
 
   clearList () {
-    this.setState({ items: [] })
+    this.setItems(() => new AbstractList())
   }
 
   performReset () {
-    this.setState({
-      items: this.state.items
-        .filter(item => item.phase === 'due')
-        .map(item => item.copyItem({ dismissed: false }))
-    })
+    this.setItems(items => items.reset())
   }
 
   startAddingItem () {
@@ -56,18 +117,12 @@ class List extends React.Component {
     this.setState({ newItemForm: '' })
 
     if (itemName) {
-      const items = this.state.items.slice()
-      items.push(new AbstractItem(itemName))
-      this.setState({ items: items })
+      this.setItems(items => items.append(itemName))
     }
   }
 
   changeItem (itemIndex, override) {
-    const before = this.state.items.slice(0, itemIndex)
-    const after = this.state.items.slice(itemIndex + 1)
-
-    before.push(this.state.items[itemIndex].copyItem(override))
-    this.setState({ items: before.concat(after) })
+    this.setItems(items => items.changeItem(itemIndex, override))
   }
 
   itemPosition (itemIndex) {
@@ -86,30 +141,13 @@ class List extends React.Component {
   }
 
   dragOverItem (itemIndex) {
-    this.setState({
-      items: this.reorderItems(this.state.draggingItem, itemIndex),
-      draggingItem: itemIndex
-    })
+    const draggingItem = this.state.draggingItem
+    this.setItems(items => items.reorderItems(draggingItem, itemIndex))
+    this.setState({ draggingItem: itemIndex })
   }
 
   moveItem (itemIndex, desiredIndex) {
-    this.setState({ items: this.reorderItems(itemIndex, desiredIndex) })
-  }
-
-  reorderItems (itemIndex, desiredIndex) {
-    const [min, max] = [itemIndex, desiredIndex].sort()
-
-    const before = this.state.items.slice(0, min)
-    const middle = this.state.items.slice(min, max + 1)
-    const after = this.state.items.slice(max + 1)
-
-    if (itemIndex < desiredIndex) {
-      middle.push(middle.shift())
-    } else {
-      middle.unshift(middle.pop())
-    }
-
-    return before.concat(middle).concat(after)
+    this.setItems(items => items.reorderItems(itemIndex, desiredIndex))
   }
 
   render () {
@@ -118,6 +156,7 @@ class List extends React.Component {
         <DailyReset
           performReset={() => this.performReset()}
           tickPeriod={this.props.tickPeriod || 5000}
+          onTick={() => this.tick()}
         />
         <ol>
           {this.state.items.map((item, index) => (
@@ -142,6 +181,7 @@ class List extends React.Component {
         <p>These buttons are only here for testing purposes.</p>
         <button type='button' onClick={() => this.performReset()}>Daily reset</button>
         <button type='button' onClick={() => this.clearList()}>Clear list</button>
+        <div data-testid={(this.state.readyToQueryAPI) ? 'ready-to-fetch' : 'do-not-fetch'} />
       </>
     )
   }
@@ -221,6 +261,7 @@ class DailyReset extends React.Component {
   }
 
   componentDidMount () {
+    this.props.onTick()
     this.tickInterval = setInterval(() => this.tick(), this.props.tickPeriod)
   }
 
@@ -242,6 +283,8 @@ class DailyReset extends React.Component {
   }
 
   tick () {
+    this.props.onTick()
+
     if (this.isTimeToReset()) {
       this.setState({ nextReset: this.resetAfterNext() })
       this.props.performReset()
@@ -282,6 +325,127 @@ class AutoFocusTextForm extends React.Component {
         <input type='submit' value='Done' />
       </form>
     )
+  }
+}
+
+class AbstractList {
+  constructor (init) {
+    if (typeof init === 'undefined') {
+      this.state = ''
+      this.items = []
+      this.remoteState = ''
+      this.remoteItems = []
+      this.transactions = []
+    } else if (typeof init.items === 'undefined') {
+      this.state = ''
+      this.items = init.map(item => new AbstractItem(item))
+      this.remoteState = ''
+      this.remoteItems = []
+      this.transactions = []
+    } else {
+      this.state = init.state
+      this.items = init.items.map(item => new AbstractItem(item))
+      this.remoteState = init.remoteState
+      this.remoteItems = init.remoteItems
+      this.transactions = init.transactions
+    }
+  }
+
+  get length () {
+    return this.items.length
+  }
+
+  map (cb) {
+    return this.items.map(cb)
+  }
+
+  reset () {
+    return new AbstractList({
+      remoteState: this.remoteState,
+      remoteItems: this.remoteItems,
+      transactions: this.transactions,
+      state: '',
+      items: this.items
+        .filter(item => item.phase === 'due')
+        .map(item => item.copyItem({ dismissed: false }))
+    })
+  }
+
+  append (item) {
+    const newItem = new AbstractItem(item)
+    return new AbstractList({
+      remoteState: this.remoteState,
+      remoteItems: this.remoteItems,
+      transactions: this.transactions.concat([{
+        uri: '/v1alpha/add',
+        request: {
+          state: this.remoteState,
+          item: newItem
+        }
+      }]),
+      state: '',
+      items: this.items.concat([newItem])
+    })
+  }
+
+  changeItem (itemIndex, override) {
+    return new AbstractList({
+      remoteState: this.remoteState,
+      remoteItems: this.remoteItems,
+      transactions: this.transactions,
+      state: '',
+      items: this.items.slice(0, itemIndex)
+        .concat([this.items[itemIndex].copyItem(override)])
+        .concat(this.items.slice(itemIndex + 1))
+    })
+  }
+
+  reorderItems (indexToMove, destinationIndex) {
+    const [min, max] = [indexToMove, destinationIndex].sort()
+
+    // The `middle` array contains both indeces as its first and last
+    // items, while the `before` and `after` arrays contain neither.
+    const before = this.items.slice(0, min)
+    const middle = this.items.slice(min, max + 1)
+    const after = this.items.slice(max + 1)
+
+    if (indexToMove < destinationIndex) {
+      // [before] i ... d [after]
+      // [before] ... d i [after]
+      middle.push(middle.shift())
+    } else {
+      // [before] d ... i [after]
+      // [before] i d ... [after]
+      middle.unshift(middle.pop())
+    }
+
+    return new AbstractList({
+      remoteState: this.remoteState,
+      remoteItems: this.remoteItems,
+      transactions: this.transactions,
+      state: '',
+      items: before.concat(middle).concat(after)
+    })
+  }
+
+  sync (remote) {
+    return new AbstractList({
+      remoteState: remote.state,
+      remoteItems: remote.items,
+      transactions: this.transactions,
+      state: remote.state,
+      items: remote.items
+    })
+  }
+
+  applyTransaction (remote) {
+    return new AbstractList({
+      remoteState: remote.state,
+      remoteItems: this.items,
+      transactions: this.transactions.slice(1),
+      state: remote.state,
+      items: this.items
+    })
   }
 }
 

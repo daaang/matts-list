@@ -19,6 +19,9 @@
       }
     }
   },
+  "standard": {
+    "globals": [ "AbortController", "fetch", "self" ]
+  },
   "dependencies": {
     "@testing-library/jest-dom": "^5.16.1",
     "@testing-library/react": "^12.1.2",
@@ -67,6 +70,8 @@
     ]
   },
   "devDependencies": {
+    "@react-mock/fetch": "^0.3.0",
+    "node-fetch": "^2",
     "standard": "^16.0.4"
   },
   "resolutions": {

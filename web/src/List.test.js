@@ -1,69 +1,9 @@
-/* global jest, describe, beforeEach, afterEach, test, expect */
+/* global jest, describe, beforeEach, afterEach, test, expect, fetch */
 import { render, screen, getByRole, fireEvent } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { FetchMock } from '@react-mock/fetch'
+import { nanoid } from 'nanoid'
 import List from './List'
-
-describe('multiple renderings', () => {
-  const world = {}
-  world.render = x => { world.unmount = render(x).unmount }
-  world.addItem = name => {
-    userEvent.click(getButtonAddItem())
-    userEvent.type(activeElement(), name + '{enter}')
-  }
-
-  world.users = [{
-    id: '1',
-    name: 'user 1',
-    email: 'user1@xyz.net'
-  }, {
-    id: '2',
-    name: 'user 2',
-    email: 'user2@xyz.net'
-  }]
-
-  test('maintains state between renders', () => {
-    world.render(<List />)
-    world.addItem('wash dishes')
-    expect(queryListItem(/wash dishes/i)).toBeDue()
-
-    world.unmount()
-    world.render(<List />)
-    expect(queryListItem(/wash dishes/i)).toBeDue()
-    userEvent.click(getButton(/dismiss wash dishes/i))
-    expect(queryListItem(/wash dishes/i)).toBeNull()
-  })
-
-  test('maintains different lists for different users', () => {
-    world.render(<List />)
-    world.addItem('wash dishes')
-
-    world.unmount()
-    world.render(<List user={world.users[0]} />)
-    world.addItem('wipe counter')
-
-    world.unmount()
-    world.render(<List user={world.users[1]} />)
-    world.addItem('polish doorknobs')
-
-    world.unmount()
-    world.render(<List />)
-    expect(queryListItem(/wash dishes/i)).toBeDue()
-    expect(queryListItem(/wipe counter/i)).toBeNull()
-    expect(queryListItem(/polish doorknobs/i)).toBeNull()
-
-    world.unmount()
-    world.render(<List user={world.users[0]} />)
-    expect(queryListItem(/wash dishes/i)).toBeNull()
-    expect(queryListItem(/wipe counter/i)).toBeDue()
-    expect(queryListItem(/polish doorknobs/i)).toBeNull()
-
-    world.unmount()
-    world.render(<List user={world.users[1]} />)
-    expect(queryListItem(/wash dishes/i)).toBeNull()
-    expect(queryListItem(/wipe counter/i)).toBeNull()
-    expect(queryListItem(/polish doorknobs/i)).toBeDue()
-  })
-})
 
 describe('a new List', () => {
   beforeEach(() => {
@@ -345,6 +285,7 @@ describe('a list with three items', () => {
 describe('a list with a complete item and a dismissed item', () => {
   beforeEach(() => {
     jest.useFakeTimers('modern')
+    jest.spyOn(global, 'fetch').mockImplementation(() => Promise.reject(new Error()))
     render(
       <List
         tickPeriod={10 * 60 * 1000}
@@ -359,6 +300,7 @@ describe('a list with a complete item and a dismissed item', () => {
 
   afterEach(() => {
     jest.useRealTimers()
+    fetch.mockRestore()
   })
 
   test('the complete item is visible and complete', () => {
@@ -404,6 +346,10 @@ describe('a list with a complete item and a dismissed item', () => {
       test('the complete item is still not on the list', () => {
         expect(queryListItem(/wash dishes/i)).toBeNull()
       })
+
+      test('the local app has made 0 calls to the api', () => {
+        expect(fetch).toHaveBeenCalledTimes(0)
+      })
     })
   })
 
@@ -422,6 +368,376 @@ describe('a list with a complete item and a dismissed item', () => {
 
     test('any due items are still on the list', () => {
       expect(queryListItem(/sweep floor/i)).toBeDue()
+    })
+  })
+})
+
+describe('multiple renderings', () => {
+  const world = {}
+
+  world.render = x => {
+    world.unmount = render(
+      <FetchMock mocks={[{ matcher: /.*/, response: 500 }]}>
+        {x}
+      </FetchMock>
+    ).unmount
+  }
+
+  world.addItem = name => {
+    userEvent.click(getButtonAddItem())
+    userEvent.type(activeElement(), name + '{enter}')
+  }
+
+  world.users = [{
+    id: '1',
+    name: 'user 1',
+    email: 'user1@xyz.net'
+  }, {
+    id: '2',
+    name: 'user 2',
+    email: 'user2@xyz.net'
+  }]
+
+  describe('a list with one item', () => {
+    beforeEach(() => {
+      world.render(<List />)
+      screen.queryAllByRole('button', { name: /dismiss/i }).forEach(dismiss => {
+        userEvent.click(dismiss)
+      })
+      world.addItem('wash dishes')
+    })
+
+    test('the item is on the list', () => {
+      expect(queryListItem(/wash dishes/i)).toBeDue()
+    })
+
+    describe('after a reload', () => {
+      beforeEach(() => {
+        world.unmount()
+        world.render(<List />)
+      })
+
+      test('the item is still on the list', () => {
+        expect(queryListItem(/wash dishes/i)).toBeDue()
+      })
+
+      describe('when the item is dismissed', () => {
+        beforeEach(() => {
+          userEvent.click(getButton(/dismiss wash dishes/i))
+        })
+
+        test('the item is no longer on the list', () => {
+          expect(queryListItem(/wash dishes/i)).toBeNull()
+        })
+
+        describe('after another reload', () => {
+          beforeEach(() => {
+            world.unmount()
+            world.render(<List />)
+          })
+
+          test('the item is still not on the list', () => {
+            expect(queryListItem(/wash dishes/i)).toBeNull()
+          })
+        })
+      })
+    })
+
+    describe('after users A and B take turns logging in to add one item, then log out', () => {
+      beforeEach(() => {
+        world.unmount()
+        world.render(<List user={world.users[0]} />)
+        screen.queryAllByRole('button', { name: /dismiss/i }).forEach(dismiss => {
+          userEvent.click(dismiss)
+        })
+        world.addItem('wipe counter')
+
+        world.unmount()
+        world.render(<List user={world.users[1]} />)
+        screen.queryAllByRole('button', { name: /dismiss/i }).forEach(dismiss => {
+          userEvent.click(dismiss)
+        })
+        world.addItem('polish doorknobs')
+
+        world.unmount()
+        world.render(<List />)
+      })
+
+      test('only the first item, belonging to nobody, is visible', () => {
+        expect(queryListItem(/wash dishes/i)).toBeDue()
+        expect(queryListItem(/wipe counter/i)).toBeNull()
+        expect(queryListItem(/polish doorknobs/i)).toBeNull()
+      })
+
+      describe('when user A logs back in', () => {
+        beforeEach(() => {
+          world.unmount()
+          world.render(<List user={world.users[0]} />)
+        })
+
+        test("only user A's item is visible", () => {
+          expect(queryListItem(/wash dishes/i)).toBeNull()
+          expect(queryListItem(/wipe counter/i)).toBeDue()
+          expect(queryListItem(/polish doorknobs/i)).toBeNull()
+        })
+
+        describe('when user B logs back in', () => {
+          beforeEach(() => {
+            world.unmount()
+            world.render(<List user={world.users[1]} />)
+          })
+
+          test("only user B's item is visible", () => {
+            expect(queryListItem(/wash dishes/i)).toBeNull()
+            expect(queryListItem(/wipe counter/i)).toBeNull()
+            expect(queryListItem(/polish doorknobs/i)).toBeDue()
+          })
+        })
+      })
+    })
+  })
+})
+
+describe('calling the api', () => {
+  const renderList = mocks => {
+    render(
+      <FetchMock mocks={mocks}>
+        <List
+          user={{
+            id: 123,
+            name: 'Chuck',
+            email: 'cgood@mailinator.com',
+            jwt: () => Promise.resolve('fake jwt')
+          }}
+        />
+      </FetchMock>
+    )
+  }
+
+  beforeEach(() => {
+    jest.useFakeTimers('modern')
+  })
+
+  afterEach(() => {
+    jest.useRealTimers()
+  })
+
+  describe('checking api state', () => {
+    test('it pulls initial state from the api', async () => {
+      renderList([{
+        matcher: /\/v1alpha\/state/,
+        response: JSON.stringify({
+          state: 'abc123',
+          items: [{
+            id: '1',
+            name: 'wash dishes',
+            phase: 'due',
+            dismissed: false
+          }, {
+            id: '2',
+            name: 'fold laundry',
+            phase: 'complete',
+            dismissed: false
+          }, {
+            id: '3',
+            name: 'pay bills',
+            phase: 'due',
+            dismissed: true
+          }]
+        })
+      }])
+
+      expect(await findListItem(/wash dishes/i)).toBeDue()
+      expect(queryListItem(/fold laundry/i)).toBeComplete()
+      expect(queryListItem(/pay bills/i)).toBeNull()
+    })
+
+    test('the list picks up remote changes from the api', async () => {
+      const world = { counter: 0 }
+
+      renderList([{
+        matcher: /\/v1alpha\/state/,
+        response: url => {
+          world.counter += 1
+          const requestState = new URL(url).searchParams.get('state')
+
+          if (world.counter < 5) {
+            if (requestState === '1') {
+              return '{"state":"1"}'
+            } else {
+              return JSON.stringify({
+                state: '1',
+                items: [{
+                  id: 'a',
+                  name: 'first item',
+                  phase: 'due',
+                  dismissed: false
+                }]
+              })
+            }
+          } else if (world.counter < 20) {
+            if (requestState === '2') {
+              return '{"state":"2"}'
+            } else {
+              return JSON.stringify({
+                state: '2',
+                items: [{
+                  id: 'a',
+                  name: 'first item',
+                  phase: 'due',
+                  dismissed: false
+                }, {
+                  id: 'b',
+                  name: 'second item',
+                  phase: 'due',
+                  dismissed: false
+                }]
+              })
+            }
+          } else {
+            if (requestState === '3') {
+              return '{"state":"3"}'
+            } else {
+              return JSON.stringify({
+                state: '3',
+                items: [{
+                  id: 'a',
+                  name: 'first item',
+                  phase: 'due',
+                  dismissed: false
+                }, {
+                  id: 'b',
+                  name: 'second item',
+                  phase: 'complete',
+                  dismissed: false
+                }]
+              })
+            }
+          }
+        }
+      }])
+
+      expect(await findListItem(/first item/i)).toBeDue()
+      expect(await findListItem(/second item/i, 50)).toBeNull()
+
+      for (let i = 0; true; i++) {
+        jest.advanceTimersByTime(5000)
+        await screen.findByTestId('do-not-fetch')
+        await screen.findByTestId('ready-to-fetch')
+
+        if (await findListItem(/second item/i, 10) === null) {
+          expect(i).toBeLessThan(5)
+        } else {
+          break
+        }
+      }
+
+      expect(await findListItem(/first item/i)).toBeDue()
+      expect(await findListItem(/second item/i)).toBeDue()
+
+      for (let i = 0; true; i++) {
+        jest.advanceTimersByTime(5000)
+        await screen.findByTestId('do-not-fetch')
+        await screen.findByTestId('ready-to-fetch')
+
+        if ((await findListItem(/second item/i, 10)).phase === 'complete') {
+          break
+        } else {
+          expect(i).toBeLessThan(20)
+        }
+      }
+    })
+
+    test('the list stores the remote state id', async () => {
+      const world = { requestState: null }
+
+      renderList([{
+        matcher: /\/v1alpha\/state/,
+        response: url => {
+          world.requestState = new URL(url).searchParams.get('state')
+
+          if (world.requestState === '1') {
+            return '{"state":"1"}'
+          } else {
+            return JSON.stringify({
+              state: '1',
+              items: [{
+                id: 'a',
+                name: 'remote item',
+                phase: 'due',
+                dismissed: false
+              }]
+            })
+          }
+        }
+      }])
+
+      expect(await findListItem(/remote item/i)).toBeDue()
+
+      for (let i = 0; true; i++) {
+        jest.advanceTimersByTime(5000)
+        await screen.findByTestId('do-not-fetch')
+        await screen.findByTestId('ready-to-fetch')
+
+        if (world.requestState === '1') {
+          break
+        } else {
+          expect(i).toBeLessThan(10)
+        }
+      }
+    })
+
+    test('tells the API when a new item is added', async () => {
+      const world = {
+        requestState: null,
+        initialState: nanoid() + '-initial',
+        itemAddedState: nanoid() + '-item-added'
+      }
+
+      renderList([{
+        matcher: /\/v1alpha\/state/,
+        response: url => {
+          world.requestState = new URL(url).searchParams.get('state')
+          if (world.requestState === world.initialState ||
+            world.requestState === world.itemAddedState) {
+            return JSON.stringify({ state: world.requestState })
+          } else {
+            return JSON.stringify({
+              state: world.initialState,
+              items: []
+            })
+          }
+        }
+      }, {
+        matcher: /\/v1alpha\/add/,
+        response: url => {
+          return JSON.stringify({ state: world.itemAddedState })
+        }
+      }])
+
+      await screen.findByTestId('do-not-fetch')
+      await screen.findByTestId('ready-to-fetch')
+
+      jest.advanceTimersByTime(5000)
+      await screen.findByTestId('do-not-fetch')
+      await screen.findByTestId('ready-to-fetch')
+
+      expect(world.requestState).toEqual(world.initialState)
+
+      userEvent.click(getButtonAddItem())
+      userEvent.type(activeElement(), 'acquire a dog{enter}')
+      expect(queryListItem(/acquire a dog/i)).toBeDue()
+
+      jest.advanceTimersByTime(5000)
+      await screen.findByTestId('do-not-fetch')
+      await screen.findByTestId('ready-to-fetch')
+
+      jest.advanceTimersByTime(5000)
+      await screen.findByTestId('do-not-fetch')
+      await screen.findByTestId('ready-to-fetch')
+
+      expect(queryListItem(/acquire a dog/i)).toBeDue()
+      expect(world.requestState).toEqual(world.itemAddedState)
     })
   })
 })
@@ -449,6 +765,14 @@ const queryListItem = name => {
 
 const queryAllListItems = () =>
   screen.getAllByRole('checkbox').map(checkbox => new ListItem(checkbox))
+
+const findListItem = (name, timeout) => new Promise((resolve, reject) => {
+  screen.findByRole('checkbox', { name }, { timeout }).then(checkbox => {
+    resolve(new ListItem(checkbox))
+  }).catch(() => {
+    resolve(null)
+  })
+})
 
 expect.extend({
   toBeComplete (received) {

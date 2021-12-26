@@ -6,11 +6,12 @@ services:
     build:
       context: ./web
       dockerfile: Dockerfile.serve
+      args:
+        REACT_APP_API_HOST: http://api:80
     ports:
     - "8080:80"
     networks:
     - frontend
-    - backend
     depends_on:
     - docs
 
@@ -36,4 +37,3 @@ services:
 
 networks:
   frontend: {}
-  backend: {}
