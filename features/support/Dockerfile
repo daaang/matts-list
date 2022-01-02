@@ -1,4 +1,4 @@
-FROM ruby:3.0
+FROM ruby:3.1.0
 
 # Create the app user and ensure that bundle won't tolerate an outdated
 # Gemfile.lock.
@@ -13,7 +13,7 @@ RUN useradd -d /tmp tester \
 # Build the dependencies. To create a new Gemfile, you can run the
 # following:
 #
-#     docker run --rm -v "$PWD":/usr/src/app -w /usr/src/app ruby:3.0 bundle install
+#     docker run --rm -v "$PWD":/usr/src/app -w /usr/src/app ruby:VERSION bundle install
 WORKDIR /usr/src/app
 COPY support/Gemfile support/Gemfile.lock ./
 RUN bundle install
