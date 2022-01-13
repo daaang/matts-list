@@ -5,8 +5,11 @@
 FROM node:17.3.0 as builder
 
 WORKDIR /usr/src/app
-COPY package.json yarn.lock ./
-RUN apt-get update && yarn install
+COPY .node-version package.json yarn.lock ./
+RUN node --version | sed -e 's/^v//' > /tmp/node-version \
+      && diff .node-version /tmp/node-version \
+      && apt-get update \
+      && yarn install
 COPY ./public public/
 COPY ./src src/
 
