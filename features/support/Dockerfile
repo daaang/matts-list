@@ -1,4 +1,4 @@
-FROM ruby:3.1.0
+FROM ruby:3.1.1
 
 # Create the app user and ensure that bundle won't tolerate an outdated
 # Gemfile.lock.
