@@ -16,5 +16,5 @@ COPY ./src src/
 RUN npx standard
 RUN yarn build
 
-FROM nginx:1.21
+FROM nginx:1.23.0
 COPY --from=builder /usr/src/app/build /usr/share/nginx/html/
