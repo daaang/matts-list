@@ -58,7 +58,7 @@ class List extends React.Component {
     if (itemName) {
       const items = this.state.items.slice()
       items.push(new AbstractItem(itemName))
-      this.setState({ items: items })
+      this.setState({ items })
     }
   }
 
@@ -126,7 +126,7 @@ class List extends React.Component {
               item={item}
               position={this.itemPosition(index)}
               isDragging={index === this.state.draggingItem}
-              onChange={phase => this.changeItem(index, { phase: phase })}
+              onChange={phase => this.changeItem(index, { phase })}
               onDismiss={() => this.changeItem(index, { dismissed: true })}
               onMoveUp={() => this.moveItem(index, index - 1)}
               onMoveDown={() => this.moveItem(index, index + 1)}
@@ -246,8 +246,6 @@ class DailyReset extends React.Component {
       this.setState({ nextReset: this.resetAfterNext() })
       this.props.performReset()
     }
-
-    this.setState({ currentTime: Date.now() })
   }
 
   isTimeToReset () {

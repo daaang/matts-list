@@ -1,6 +1,7 @@
 /* global jest, describe, beforeEach, afterEach, test, expect */
 import { render, screen, getByRole, fireEvent } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { act } from 'react-dom/test-utils'
 import List from './List'
 
 describe('multiple renderings', () => {
@@ -371,7 +372,9 @@ describe('a list with a complete item and a dismissed item', () => {
 
   describe('after a day passes', () => {
     beforeEach(() => {
-      jest.advanceTimersByTime(24 * 60 * 60 * 1000)
+      act(() => {
+        jest.advanceTimersByTime(24 * 60 * 60 * 1000)
+      })
     })
 
     test('the complete item is no longer on the list', () => {
@@ -398,7 +401,9 @@ describe('a list with a complete item and a dismissed item', () => {
 
     describe('after a day passes', () => {
       beforeEach(() => {
-        jest.advanceTimersByTime(24 * 60 * 60 * 1000)
+        act(() => {
+          jest.advanceTimersByTime(24 * 60 * 60 * 1000)
+        })
       })
 
       test('the complete item is still not on the list', () => {
@@ -431,15 +436,15 @@ const activeElement = () => { return document.activeElement || document.body }
 const getButtonClear = () => screen.getByRole('button', { name: /clear/i })
 const getButtonAddItem = () => screen.getByRole('button', { name: /add/i })
 const getButtonReset = () => screen.getByRole('button', { name: /reset/i })
-const getButton = name => screen.getByRole('button', { name: name })
-const getCheckbox = name => screen.getByRole('checkbox', { name: name })
+const getButton = name => screen.getByRole('button', { name })
+const getCheckbox = name => screen.getByRole('checkbox', { name })
 const queryInputNewItem = () => screen.queryByRole('textbox', { name: /new item/i })
 
 const getChildElement = (element, tagName) =>
   Array.from(element.children).find(element => element.tagName === tagName.toUpperCase())
 
 const queryListItem = name => {
-  const checkbox = screen.queryByRole('checkbox', { name: name })
+  const checkbox = screen.queryByRole('checkbox', { name })
   if (checkbox) {
     return new ListItem(checkbox)
   } else {

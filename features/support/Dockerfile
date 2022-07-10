@@ -13,7 +13,8 @@ RUN useradd -d /tmp tester \
 # Build the dependencies. To create a new Gemfile, you can run the
 # following:
 #
-#     docker run --rm -v "$PWD":/usr/src/app -w /usr/src/app ruby:VERSION bundle install
+#     podman run --rm -v "$PWD":/usr/src/app -w /usr/src/app docker.io/library/ruby:VERSION bundle update
+#     podman run --rm -v "$PWD":/usr/src/app -w /usr/src/app docker.io/library/ruby:VERSION bundle install
 WORKDIR /usr/src/app
 COPY support/Gemfile support/Gemfile.lock ./
 RUN bundle install
