@@ -17,10 +17,11 @@ Make commands
 
 ### Dependencies
 
--   [Docker][1] (with docker-compose) is all you need to run all
-    the tests.
+-   [Podman][1] is all you need to run all the tests. It's basically
+    docker but something else. Sorry if you're tired of tracking One
+    Million Docker Alternatives; I am too.
 
-[1]: https://www.docker.com/products/docker-desktop
+[1]: https://podman.io/getting-started/installation
 
 That said, if you're planning on doing local development work, you'll
 probably want to be running nodejs locally. It's the difference between

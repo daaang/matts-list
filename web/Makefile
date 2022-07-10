@@ -1,4 +1,4 @@
-.PHONY: clean distclean test containers teardown
+.PHONY: clean distclean test
 
 build: node_modules public/* src/*
 	yarn build
@@ -8,20 +8,18 @@ node_modules: package.json yarn.lock
 
 clean:
 	rm -rf build coverage
+	for i in .podman_test; do if [ -e $$i ]; then podman stop `cat $$i`; podman rm `cat $$i`; rm $$i; fi; done
 
 distclean: clean
 	rm -rf node_modules
 
-# Clean up any stray docker-compose artifacts
-teardown:
-	docker-compose down
+test: .podman_test
+	podman start --attach `cat .podman_test`
 
-test: containers
-	docker-compose run test
-	docker-compose down
-
-containers:
-	docker-compose build --quiet --parallel
+.podman_test:
+	for i in $@; do if [ -e $$i ]; then podman stop `cat $$i`; podman rm `cat $$i`; rm $$i; fi; done
+	podman build --tag mlist-web-test --file Dockerfile.test .
+	podman create --tty mlist-web-test > $@
 
 # The current logo is a placeholder that I threw together in like 30
 # minutes just to have something better tailored than the react favicon.
