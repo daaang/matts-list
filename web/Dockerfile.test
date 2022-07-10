@@ -1,4 +1,4 @@
-FROM node:18.1.0
+FROM docker.io/library/node:18.1.0
 
 RUN useradd -d /tmp builder
 
