@@ -9,8 +9,8 @@ describe('multiple renderings', () => {
   const world = {}
   world.render = x => { world.unmount = render(x).unmount }
   world.addItem = async name => {
-    await userEvent.click(getButtonAddItem())
-    await userEvent.type(activeElement(), name + '{enter}')
+    await userEvent.default.click(getButtonAddItem())
+    await userEvent.default.type(activeElement(), name + '{enter}')
   }
 
   world.users = [{
@@ -31,7 +31,7 @@ describe('multiple renderings', () => {
     world.unmount()
     world.render(<List />)
     expect(queryListItem(/wash dishes/i)).toBeDue()
-    await userEvent.click(getButton(/dismiss wash dishes/i))
+    await userEvent.default.click(getButton(/dismiss wash dishes/i))
     expect(queryListItem(/wash dishes/i)).toBeNull()
   })
 
@@ -78,7 +78,7 @@ describe('a new List', () => {
 
   describe('when the add item button has been clicked', () => {
     beforeEach(async () => {
-      await userEvent.click(getButtonAddItem())
+      await userEvent.default.click(getButtonAddItem())
     })
 
     test('a new item field has focus', () => {
@@ -87,7 +87,7 @@ describe('a new List', () => {
 
     describe('when the empty new item form is submitted', () => {
       beforeEach(async () => {
-        await userEvent.click(getButton(/done/i))
+        await userEvent.default.click(getButton(/done/i))
       })
 
       test('the new item field is no longer present', () => {
@@ -102,7 +102,7 @@ describe('a new List', () => {
     describe('when "wash dishes" has been typed in', () => {
       beforeEach(async () => {
         expect(queryListItem(/wash dishes/i)).toBeNull()
-        await userEvent.type(
+        await userEvent.default.type(
           activeElement(),
           'wash dishes{enter}',
           { skipClick: true }
@@ -119,9 +119,9 @@ describe('a new List', () => {
 
       describe('when I add a second item', () => {
         beforeEach(async () => {
-          await userEvent.click(getButtonAddItem())
+          await userEvent.default.click(getButtonAddItem())
           expect(queryListItem(/put clothes away/i)).toBeNull()
-          await userEvent.type(
+          await userEvent.default.type(
             activeElement(),
             'put clothes away{enter}',
             { skipClick: true }
@@ -138,7 +138,7 @@ describe('a new List', () => {
 
         describe('when the clear list button has been clicked', () => {
           beforeEach(async () => {
-            await userEvent.click(getButtonClear())
+            await userEvent.default.click(getButtonClear())
           })
 
           test('both items are no longer visible', () => {
@@ -187,7 +187,7 @@ describe('a list with three items', () => {
 
   describe('when an item is completed', () => {
     beforeEach(async () => {
-      await userEvent.click(getCheckbox(/fold clothes/i))
+      await userEvent.default.click(getCheckbox(/fold clothes/i))
     })
 
     test('the item is complete instead of due', () => {
@@ -197,7 +197,7 @@ describe('a list with three items', () => {
 
     describe('when the item is reopened', () => {
       beforeEach(async () => {
-        await userEvent.click(getCheckbox(/fold clothes/i))
+        await userEvent.default.click(getCheckbox(/fold clothes/i))
       })
 
       test('the item is due again', () => {
@@ -209,7 +209,7 @@ describe('a list with three items', () => {
 
   describe('when an item is dismissed', () => {
     beforeEach(async () => {
-      await userEvent.click(getButton(/dismiss sweep floor/i))
+      await userEvent.default.click(getButton(/dismiss sweep floor/i))
     })
 
     test('the item is no longer visible', () => {
@@ -219,7 +219,7 @@ describe('a list with three items', () => {
 
   describe('when the second item is moved up', () => {
     beforeEach(async () => {
-      await userEvent.click(getButton(/move up fold clothes/i))
+      await userEvent.default.click(getButton(/move up fold clothes/i))
     })
 
     test('the second item is on top of the list', () => {
@@ -233,7 +233,7 @@ describe('a list with three items', () => {
 
   describe('when the second item is moved down', () => {
     beforeEach(async () => {
-      await userEvent.click(getButton(/move down fold clothes/i))
+      await userEvent.default.click(getButton(/move down fold clothes/i))
     })
 
     test('the second item is on the bottom of the list', () => {
@@ -401,7 +401,7 @@ describe('a list with a complete item and a dismissed item', () => {
 
   describe('when the complete item is dismissed', () => {
     beforeEach(awaitAsyncEvent(() =>
-      userEvent.click(getButton(/dismiss wash dishes/i))))
+      userEvent.default.click(getButton(/dismiss wash dishes/i))))
 
     test('the complete item is no longer on the list', () => {
       expect(queryListItem(/wash dishes/i)).toBeNull()
@@ -422,7 +422,7 @@ describe('a list with a complete item and a dismissed item', () => {
 
   describe('when the reset button is pressed', () => {
     beforeEach(awaitAsyncEvent(() =>
-      userEvent.click(getButtonReset())))
+      userEvent.default.click(getButtonReset())))
 
     test('the complete item is no longer on the list', () => {
       expect(queryListItem(/wash dishes/i)).toBeNull()
