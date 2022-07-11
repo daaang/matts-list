@@ -51,6 +51,14 @@ class User {
 }
 
 class FakeUser extends User {
+  /**
+   * Create a fake user. The input object will be JSON.stringified as
+   * well, and it will be treated as the JWT.
+   * @param {Object} user - A fake user object.
+   * @param {string} user.id - The user's unique id.
+   * @param {string} user.email - The user's email address.
+   * @param {string} user.name - The user's name.
+   */
   constructor (user) {
     super({
       id: user.id,
@@ -69,25 +77,50 @@ class FakeUser extends User {
 }
 
 const AppWithAuth = props => {
+  /**
+   * Convert a netlify user object to a new User (or pull a FakeUser
+   * from the GET parameters).
+   * @param {Object|null} user - netlify user object (or null)
+   * @return {User}
+   */
   const newUser = user => {
+    // First, check the GET parameters.
     const params = new URLSearchParams(window.location.search)
     if (params.has('fakeuser')) {
+      // If there's a fakeuser parameter set, just go with it.
       return new FakeUser(JSON.parse(params.get('fakeuser')))
     }
 
     return user ? new User(user) : null
   }
 
+  // The login button does not start disabled.
   const [buttonIsDisabled, setButtonDisabled] = useState(false)
+
+  // The user should attempt to get the current netlify user if there
+  // is one.
   const [user, setUser] = useState(newUser(netlifyIdentity.currentUser()))
 
+  // Set up the User object on init/login.
   netlifyIdentity.on('init', u => setUser(newUser(u)))
   netlifyIdentity.on('login', u => setUser(newUser(u)))
+
+  // Close the login widget on login. (Otherwise it stays up, getting in
+  // the way and taking up space on login.)
   netlifyIdentity.on('login', () => netlifyIdentity.close())
+
+  // On logout, enable the login button.
   netlifyIdentity.on('logout', () => setButtonDisabled(false))
 
+  /**
+   * Open the netlify login widget. With this, the user will ideally
+   * trigger a login event, closing the widget and setting a new User.
+   */
   const login = () => netlifyIdentity.open()
 
+  /**
+   * Log the user out (and disable the logout button until finished).
+   */
   const logout = () => {
     setButtonDisabled(true)
     setUser(null)
