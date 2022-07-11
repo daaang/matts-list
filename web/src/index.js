@@ -1,9 +1,11 @@
 import React, { useState } from 'react'
-import ReactDOM from 'react-dom'
+import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App'
 import * as serviceWorkerRegistration from './serviceWorkerRegistration'
 import netlifyIdentity from 'netlify-identity-widget'
+
+const root = createRoot(document.getElementById('root'))
 
 window.netlifyIdentity = netlifyIdentity
 netlifyIdentity.init()
@@ -107,11 +109,10 @@ const AppWithAuth = props => {
   )
 }
 
-ReactDOM.render(
+root.render(
   <React.StrictMode>
     <AppWithAuth />
-  </React.StrictMode>,
-  document.getElementById('root')
+  </React.StrictMode>
 )
 
 serviceWorkerRegistration.register()

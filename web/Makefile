@@ -16,7 +16,7 @@ distclean: clean
 test: .podman_test
 	podman start --attach `cat .podman_test`
 
-.podman_test:
+.podman_test: Dockerfile.serve package.json yarn.lock public/* src/*
 	for i in $@; do if [ -e $$i ]; then podman stop `cat $$i`; podman rm `cat $$i`; rm $$i; fi; done
 	podman build --tag mlist-web-test --file Dockerfile.test .
 	podman create --tty mlist-web-test > $@
