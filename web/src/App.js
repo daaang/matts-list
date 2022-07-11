@@ -1,4 +1,4 @@
-import List from './List'
+import List from './List.js'
 
 function App (props) {
   return (
