@@ -1574,6 +1574,13 @@
   dependencies:
     "@sinonjs/commons" "^1.7.0"
 
+"@sinonjs/fake-timers@^9.1.2":
+  version "9.1.2"
+  resolved "https://registry.yarnpkg.com/@sinonjs/fake-timers/-/fake-timers-9.1.2.tgz#4eaab737fab77332ab132d396a3c0d364bd0ea8c"
+  integrity sha512-BPS4ynJW/o92PUR4wgriz2Ud5gpST5vz6GQfMixEDK0Z8ZCUv2M7SkBLykH56T++Xs+8ln9zTGbOvNGIe02/jw==
+  dependencies:
+    "@sinonjs/commons" "^1.7.0"
+
 "@surma/rollup-plugin-off-main-thread@^2.2.3":
   version "2.2.3"
   resolved "https://registry.yarnpkg.com/@surma/rollup-plugin-off-main-thread/-/rollup-plugin-off-main-thread-2.2.3.tgz#ee34985952ca21558ab0d952f00298ad2190c053"
@@ -1725,12 +1732,10 @@
     "@testing-library/dom" "^8.5.0"
     "@types/react-dom" "^18.0.0"
 
-"@testing-library/user-event@^13.5.0":
-  version "13.5.0"
-  resolved "https://registry.yarnpkg.com/@testing-library/user-event/-/user-event-13.5.0.tgz#69d77007f1e124d55314a2b73fd204b333b13295"
-  integrity sha512-5Kwtbo3Y/NowpkbRuSepbyMFkZmHgD+vPzYB/RJ4oxt5Gj/avFFBYjhw27cqSVPVw/3a67NK1PbiIr9k4Gwmdg==
-  dependencies:
-    "@babel/runtime" "^7.12.5"
+"@testing-library/user-event@^14.2.1":
+  version "14.2.1"
+  resolved "https://registry.yarnpkg.com/@testing-library/user-event/-/user-event-14.2.1.tgz#8c5ff2d004544bb2220e1d864f7267fe7eb6c556"
+  integrity sha512-HOr1QiODrq+0j9lKU5i10y9TbhxMBMRMGimNx10asdmau9cb8Xb1Vyg0GvTwyIL2ziQyh2kAloOtAQFBQVuecA==
 
 "@tootallnate/once@1":
   version "1.1.2"
@@ -2394,6 +2399,7 @@ ansi-escapes@^4.2.1, ansi-escapes@^4.3.1:
     type-fest "^0.21.3"
 
 ansi-html-community@^0.0.8, "ansi-html@https://registry.yarnpkg.com/ansi-html-community/-/ansi-html-community-0.0.8.tgz#69fbc4d6ccbe383f9736934ae34c3f8290f1bf41":
+  name ansi-html
   version "0.0.8"
   resolved "https://registry.yarnpkg.com/ansi-html-community/-/ansi-html-community-0.0.8.tgz#69fbc4d6ccbe383f9736934ae34c3f8290f1bf41"
   integrity sha512-1APHAyr3+PCamwNw3bXCPp4HFLONZt/yIH0sZp0/469KWNTEy+qN5jQ3GVX6DMZ1UXAi34yVwtTeaG/HpBuuzw==
