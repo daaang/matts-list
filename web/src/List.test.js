@@ -1,15 +1,16 @@
-/* global jest, describe, beforeEach, afterEach, test, expect */
+/* global describe, beforeEach, afterEach, test, expect */
 import { render, screen, getByRole, fireEvent } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import FakeTimers from '@sinonjs/fake-timers'
 import { act } from 'react-dom/test-utils'
 import List from './List'
 
 describe('multiple renderings', () => {
   const world = {}
   world.render = x => { world.unmount = render(x).unmount }
-  world.addItem = name => {
-    userEvent.click(getButtonAddItem())
-    userEvent.type(activeElement(), name + '{enter}')
+  world.addItem = async name => {
+    await userEvent.click(getButtonAddItem())
+    await userEvent.type(activeElement(), name + '{enter}')
   }
 
   world.users = [{
@@ -22,29 +23,29 @@ describe('multiple renderings', () => {
     email: 'user2@xyz.net'
   }]
 
-  test('maintains state between renders', () => {
+  test('maintains state between renders', async () => {
     world.render(<List />)
-    world.addItem('wash dishes')
+    await world.addItem('wash dishes')
     expect(queryListItem(/wash dishes/i)).toBeDue()
 
     world.unmount()
     world.render(<List />)
     expect(queryListItem(/wash dishes/i)).toBeDue()
-    userEvent.click(getButton(/dismiss wash dishes/i))
+    await userEvent.click(getButton(/dismiss wash dishes/i))
     expect(queryListItem(/wash dishes/i)).toBeNull()
   })
 
-  test('maintains different lists for different users', () => {
+  test('maintains different lists for different users', async () => {
     world.render(<List />)
-    world.addItem('wash dishes')
+    await world.addItem('wash dishes')
 
     world.unmount()
     world.render(<List user={world.users[0]} />)
-    world.addItem('wipe counter')
+    await world.addItem('wipe counter')
 
     world.unmount()
     world.render(<List user={world.users[1]} />)
-    world.addItem('polish doorknobs')
+    await world.addItem('polish doorknobs')
 
     world.unmount()
     world.render(<List />)
@@ -76,8 +77,8 @@ describe('a new List', () => {
   })
 
   describe('when the add item button has been clicked', () => {
-    beforeEach(() => {
-      userEvent.click(getButtonAddItem())
+    beforeEach(async () => {
+      await userEvent.click(getButtonAddItem())
     })
 
     test('a new item field has focus', () => {
@@ -85,8 +86,8 @@ describe('a new List', () => {
     })
 
     describe('when the empty new item form is submitted', () => {
-      beforeEach(() => {
-        userEvent.click(getButton(/done/i))
+      beforeEach(async () => {
+        await userEvent.click(getButton(/done/i))
       })
 
       test('the new item field is no longer present', () => {
@@ -99,9 +100,9 @@ describe('a new List', () => {
     })
 
     describe('when "wash dishes" has been typed in', () => {
-      beforeEach(() => {
+      beforeEach(async () => {
         expect(queryListItem(/wash dishes/i)).toBeNull()
-        userEvent.type(
+        await userEvent.type(
           activeElement(),
           'wash dishes{enter}',
           { skipClick: true }
@@ -117,10 +118,10 @@ describe('a new List', () => {
       })
 
       describe('when I add a second item', () => {
-        beforeEach(() => {
-          userEvent.click(getButtonAddItem())
+        beforeEach(async () => {
+          await userEvent.click(getButtonAddItem())
           expect(queryListItem(/put clothes away/i)).toBeNull()
-          userEvent.type(
+          await userEvent.type(
             activeElement(),
             'put clothes away{enter}',
             { skipClick: true }
@@ -136,8 +137,8 @@ describe('a new List', () => {
         })
 
         describe('when the clear list button has been clicked', () => {
-          beforeEach(() => {
-            userEvent.click(getButtonClear())
+          beforeEach(async () => {
+            await userEvent.click(getButtonClear())
           })
 
           test('both items are no longer visible', () => {
@@ -185,8 +186,8 @@ describe('a list with three items', () => {
   })
 
   describe('when an item is completed', () => {
-    beforeEach(() => {
-      userEvent.click(getCheckbox(/fold clothes/i))
+    beforeEach(async () => {
+      await userEvent.click(getCheckbox(/fold clothes/i))
     })
 
     test('the item is complete instead of due', () => {
@@ -195,8 +196,8 @@ describe('a list with three items', () => {
     })
 
     describe('when the item is reopened', () => {
-      beforeEach(() => {
-        userEvent.click(getCheckbox(/fold clothes/i))
+      beforeEach(async () => {
+        await userEvent.click(getCheckbox(/fold clothes/i))
       })
 
       test('the item is due again', () => {
@@ -207,8 +208,8 @@ describe('a list with three items', () => {
   })
 
   describe('when an item is dismissed', () => {
-    beforeEach(() => {
-      userEvent.click(getButton(/dismiss sweep floor/i))
+    beforeEach(async () => {
+      await userEvent.click(getButton(/dismiss sweep floor/i))
     })
 
     test('the item is no longer visible', () => {
@@ -217,8 +218,8 @@ describe('a list with three items', () => {
   })
 
   describe('when the second item is moved up', () => {
-    beforeEach(() => {
-      userEvent.click(getButton(/move up fold clothes/i))
+    beforeEach(async () => {
+      await userEvent.click(getButton(/move up fold clothes/i))
     })
 
     test('the second item is on top of the list', () => {
@@ -231,8 +232,8 @@ describe('a list with three items', () => {
   })
 
   describe('when the second item is moved down', () => {
-    beforeEach(() => {
-      userEvent.click(getButton(/move down fold clothes/i))
+    beforeEach(async () => {
+      await userEvent.click(getButton(/move down fold clothes/i))
     })
 
     test('the second item is on the bottom of the list', () => {
@@ -344,8 +345,16 @@ describe('a list with three items', () => {
 })
 
 describe('a list with a complete item and a dismissed item', () => {
+  let clock = null
+  const awaitAsyncEvent = fn => () => new Promise(resolve => {
+    Promise.all([fn(), clock.tickAsync(1000)]).then(values => {
+      resolve(values)
+    })
+  })
+
   beforeEach(() => {
-    jest.useFakeTimers('modern')
+    const now = Date.now()
+    clock = FakeTimers.install({ now })
     render(
       <List
         tickPeriod={10 * 60 * 1000}
@@ -359,7 +368,7 @@ describe('a list with a complete item and a dismissed item', () => {
   })
 
   afterEach(() => {
-    jest.useRealTimers()
+    clock.uninstall()
   })
 
   test('the complete item is visible and complete', () => {
@@ -371,9 +380,9 @@ describe('a list with a complete item and a dismissed item', () => {
   })
 
   describe('after a day passes', () => {
-    beforeEach(() => {
-      act(() => {
-        jest.advanceTimersByTime(24 * 60 * 60 * 1000)
+    beforeEach(async () => {
+      await act(async () => {
+        await clock.tickAsync(24 * 60 * 60 * 1000)
       })
     })
 
@@ -391,18 +400,17 @@ describe('a list with a complete item and a dismissed item', () => {
   })
 
   describe('when the complete item is dismissed', () => {
-    beforeEach(() => {
-      userEvent.click(getButton(/dismiss wash dishes/i))
-    })
+    beforeEach(awaitAsyncEvent(() =>
+      userEvent.click(getButton(/dismiss wash dishes/i))))
 
     test('the complete item is no longer on the list', () => {
       expect(queryListItem(/wash dishes/i)).toBeNull()
     })
 
     describe('after a day passes', () => {
-      beforeEach(() => {
-        act(() => {
-          jest.advanceTimersByTime(24 * 60 * 60 * 1000)
+      beforeEach(async () => {
+        await act(async () => {
+          await clock.tickAsync(24 * 60 * 60 * 1000)
         })
       })
 
@@ -413,9 +421,8 @@ describe('a list with a complete item and a dismissed item', () => {
   })
 
   describe('when the reset button is pressed', () => {
-    beforeEach(() => {
-      userEvent.click(getButtonReset())
-    })
+    beforeEach(awaitAsyncEvent(() =>
+      userEvent.click(getButtonReset())))
 
     test('the complete item is no longer on the list', () => {
       expect(queryListItem(/wash dishes/i)).toBeNull()
