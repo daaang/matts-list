@@ -96,10 +96,6 @@ function registerValidSW (swUrl, config) {
     })
 }
 
-// Standardjs complains about the use of fetch on line 105, but when I
-// add the global on 102, eslint complains, hence this. Ugh whatever
-/* eslint no-redeclare: ["error", { "builtinGlobals": false }] */
-/* global fetch */
 function checkValidServiceWorker (swUrl, config) {
   // Check if the service worker can be found. If it can't reload the page.
   fetch(swUrl, {
