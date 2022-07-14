@@ -27,7 +27,7 @@
     "@sinonjs/fake-timers": "^9.1.2",
     "@testing-library/jest-dom": "^5.16.2",
     "@testing-library/react": "^13.3.0",
-    "@testing-library/user-event": "^14.2.1",
+    "@testing-library/user-event": "^14.2.3",
     "browserslist": "^4.16.5",
     "immer": "^9.0.6",
     "nanoid": "4.0.0",
