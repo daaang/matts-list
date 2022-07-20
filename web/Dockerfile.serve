@@ -17,6 +17,6 @@ ENV CI="true"
 RUN npx standard
 RUN yarn build
 
-FROM docker.io/library/nginx:1.23.0
+FROM docker.io/library/nginx:1.23.1
 RUN sed -i -e "s/80;/8080;/" /etc/nginx/conf.d/default.conf
 COPY --from=builder /usr/src/app/build /usr/share/nginx/html/
