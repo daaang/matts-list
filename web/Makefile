@@ -1,9 +1,17 @@
+containers = .podman_test
+define stop-container =
+if [ -e $@ ]; then podman stop `cat $@`; podman rm `cat $@`; rm $@; fi
+endef
+
 .PHONY: clean distclean test
 
 build: node_modules public/* src/*
 	yarn build
 
 node_modules: package.json yarn.lock
+	yarn install
+
+yarn.lock: package.json
 	yarn install
 
 clean:
@@ -16,9 +24,9 @@ distclean: clean
 test: .podman_test
 	podman start --attach `cat .podman_test`
 
-.podman_test: Dockerfile.serve package.json yarn.lock public/* src/*
-	for i in $@; do if [ -e $$i ]; then podman stop `cat $$i`; podman rm `cat $$i`; rm $$i; fi; done
-	podman build --tag mlist-web-test --file Dockerfile.test .
+.podman_test: Dockerfile.test package.json yarn.lock public/* src/*
+	$(stop-container)
+	podman build --tag mlist-web-test --file $< .
 	podman create --tty mlist-web-test > $@
 
 # The current logo is a placeholder that I threw together in like 30
