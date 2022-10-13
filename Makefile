@@ -26,7 +26,7 @@ serve: .podman_web .podman_docs
 	podman start `cat .podman_docs`
 	@echo "[32mView at http://localhost:8080/ [0m(docsite at 8081)"
 
-.podman_web: web/Dockerfile.serve web/package.json web/yarn.lock web/public/* web/src/*
+.podman_web: web/Dockerfile web/package.json web/yarn.lock web/public/* web/src/*
 	$(stop-container)
 	podman build --tag mlist-web --file $< web
 	podman create --network host mlist-web > $@

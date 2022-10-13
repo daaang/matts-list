@@ -24,9 +24,9 @@ distclean: clean
 test: .podman_test
 	podman start --attach `cat .podman_test`
 
-.podman_test: Dockerfile.test package.json yarn.lock public/* src/*
+.podman_test: Dockerfile package.json yarn.lock public/* src/*
 	$(stop-container)
-	podman build --tag mlist-web-test --file $< .
+	podman build --tag mlist-web-test --file $< --target test .
 	podman create --tty mlist-web-test > $@
 
 # The current logo is a placeholder that I threw together in like 30
