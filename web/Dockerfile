@@ -1,4 +1,4 @@
-FROM docker.io/library/node:18.10.0 as base
+FROM docker.io/library/node:19.0.0 as base
 
 WORKDIR /usr/src/app
 COPY .node-version package.json yarn.lock ./
