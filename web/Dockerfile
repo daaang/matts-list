@@ -26,7 +26,7 @@ FROM base AS build
 ENV CI="true"
 RUN npx standard && yarn build
 
-FROM docker.io/library/nginx:1.23.1
+FROM docker.io/library/nginx:1.23.2
 ENV NGINX_PORT=8080
 COPY ./nginx.conf /etc/nginx/templates/default.conf.template
 COPY --from=build /usr/src/app/build /usr/share/nginx/html/
