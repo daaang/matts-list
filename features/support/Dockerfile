@@ -1,4 +1,4 @@
-FROM docker.io/library/ruby:3.1.2
+FROM docker.io/library/ruby:3.1.3
 
 # Create the app user and ensure that bundle won't tolerate an outdated
 # Gemfile.lock.
