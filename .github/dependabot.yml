@@ -2,36 +2,19 @@
 
 version: 2
 updates:
+  # GitHub
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "daily"
 
-  # The acceptance tests' support directory has a Dockerfile and
-  # a Gemfile.
-  - package-ecosystem: "docker"
-    directory: "/features/support"
-    schedule:
-      interval: "daily"
-  - package-ecosystem: "bundler"
-    directory: "/features/support"
-    schedule:
-      interval: "daily"
-
-  # My static app is in the web directory and has a couple Dockerfiles
-  # as well as package.json and yarn.lock.
-  - package-ecosystem: "docker"
-    directory: "/web"
-    schedule:
-      interval: "daily"
+  # Single-page app
   - package-ecosystem: "npm"
-    directory: "/web"
+    directory: "/app"
     schedule:
       interval: "daily"
 
-  # There's another static website, but it's just regular html/css, so
-  # the only file to watch for versions is the Dockerfile, which is for
-  # testing purposes only.
+  # nginx containerfile for dev purposes
   - package-ecosystem: "docker"
     directory: "/docs/matts-list.com"
     schedule:
