@@ -1,10 +1,11 @@
 # 5. Deploy and handle identity with Netlify
 
-Date: 2021-11-22
+Date: 2021-11-22  
+Questioned: 2023-09-01
 
 ## Status
 
-Accepted
+Not sure anymore; will revisit later
 
 ## Context
 
@@ -39,7 +40,7 @@ I'll use Netlify not only as my CDN but also as my identity provider.
 ## Consequences
 
 If I find myself supporting more than a thousand active users, I'll have
-to start using Netlify's business tier for $99/month. This will not only
+to start using Netlify's business tier for &x24;99/month. This will not only
 entitle me to unlimited active users but also to more bandwidth, more
 build minutes, and whatever else comes with that. If my app is being
 used by thousands of people, it makes sense to actually pay for hosting.

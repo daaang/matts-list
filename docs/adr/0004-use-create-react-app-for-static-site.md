@@ -1,10 +1,11 @@
 # 4. Use Create React App for the static site
 
-Date: 2021-10-08
+Date: 2021-10-08  
+Superseded: 2023-09-01
 
 ## Status
 
-Accepted
+Superseded by [ADR-8][4]
 
 ## Context
 
@@ -32,3 +33,9 @@ react app solves a few problems (building a static site) for me.
 ## Decision
 
 I'll use Create React App to get started with the main static website.
+
+## Consequences
+
+Turns out I do not enjoy using React! See [ADR-8][4].
+
+[4]: ./0008-use-svelte-instead-of-react.md

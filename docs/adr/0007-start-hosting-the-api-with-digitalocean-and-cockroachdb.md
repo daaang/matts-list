@@ -22,7 +22,7 @@ able to include it in my acceptance tests.
 
 [3]: https://hub.docker.com/r/cockroachdb/cockroach/
 
-DigitalOcean charges $10/month for its most basic Kubernetes setup,
+DigitalOcean charges &x24;10/month for its most basic Kubernetes setup,
 and CockroachDB is free until I exceed 5GB storage or 250,000,000
 requests/month (about 8,000,000 /day).
 
