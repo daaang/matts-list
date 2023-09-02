@@ -1,0 +1,23 @@
+FROM docker.io/library/node:20.5.1 AS base
+WORKDIR /app
+COPY Makefile .node-version .npmrc package.json package-lock.json ./
+RUN node --version | sed -e 's/^v//' > /tmp/node-version \
+      && diff .node-version /tmp/node-version \
+      && apt-get update \
+      && make node_modules
+COPY svelte.config.js vite.config.js ./
+COPY ./src src/
+COPY ./static static/
+
+FROM base AS test
+COPY .eslintignore .eslintrc.cjs ./
+CMD make lint
+
+FROM base AS build
+ENV CI="true"
+RUN make build
+
+FROM docker.io/library/nginx:1.23.2
+ENV NGINX_PORT=8987
+COPY ./nginx.conf /etc/nginx/templates/default.conf.template
+COPY --from=build /app/build /usr/share/nginx/html/
