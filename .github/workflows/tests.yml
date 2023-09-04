@@ -14,6 +14,6 @@ jobs:
       matrix:
         make-target: ["test-app"]
     steps:
-    - uses: "actions/checkout@v3"
+    - uses: "actions/checkout@v4"
     - name: "run tests"
       run: "make ${{ matrix.make-target }}"
