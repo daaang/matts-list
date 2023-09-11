@@ -14,7 +14,7 @@
     "@sveltejs/kit": "^1.20.4",
     "eslint": "^8.28.0",
     "eslint-config-standard": "^17.1.0",
-    "eslint-plugin-svelte": "^2.30.0",
+    "eslint-plugin-svelte": "^2.33.1",
     "nanoid": "^4.0.2",
     "svelte": "^4.0.5",
     "vite": "^4.4.2"
