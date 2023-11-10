@@ -16,7 +16,7 @@
     "eslint-config-standard": "^17.1.0",
     "eslint-plugin-svelte": "^2.30.0",
     "nanoid": "^4.0.2",
-    "svelte": "^4.0.5",
+    "svelte": "^4.2.3",
     "vite": "^4.4.2"
   },
   "type": "module"
